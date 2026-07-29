@@ -17,6 +17,8 @@ const ALLOWED_FIELDS = new Set(["number", "aim"]);
 const MAX_EXPERIMENTS = 200;
 const MAX_EXPERIMENT_NUMBER = 999;
 const MAX_AIM_LENGTH = 300;
+// Control characters are intentionally rejected from untrusted catalog text.
+// eslint-disable-next-line no-control-regex
 const UNSAFE_AIM_CHARACTERS = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/u;
 const EXPERIMENT_METADATA_LINE =
   /^;[ \t]*(?:Experiment No|Title):[^\n]*(?:\n|$)/gimu;

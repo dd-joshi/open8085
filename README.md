@@ -22,7 +22,6 @@ a desktop simulator.
 - [Assembler syntax](#assembler-syntax)
 - [Solved examples](#solved-examples)
 - [Publishing weekly experiments](#publishing-weekly-experiments)
-- [Publishing weekly experiments](#publishing-weekly-experiments)
 - [Virtual I/O board](#virtual-io-board)
 - [Number converter](#number-converter)
 - [Autosave and ASM export](#autosave-and-asm-export)
@@ -110,9 +109,9 @@ student account, or server-side storage.
 ### Install and run
 
 ```bash
-git clone <your-repository-url>
-cd 8085simu
-npm install
+git clone <repository-url>
+cd open8085-lab
+npm ci
 npm run dev
 ```
 
@@ -160,9 +159,13 @@ Successful assembly:
 
 - Converts source into machine-code bytes
 - Loads the program into simulated memory
-- Sets PC to the assembled origin
+- Sets PC to the first instruction in source order
 - Clears the previous execution trace
 - Loads prepared memory data for solved examples
+
+The lowest emitted address remains the assembly origin used for the memory
+image. It may differ from the execution entry when a lower-address data segment
+is declared with another `ORG`.
 
 For unsolved experiments, assembling starts with a cleared simulated machine.
 Set any required test data after assembly, or write initialization instructions
@@ -176,10 +179,12 @@ error to jump to that line.
 - **Run** executes continuously.
 - **Pause** stops continuous execution without discarding machine state.
 - **Step** executes exactly one instruction.
-- **Reset** resets the processor registers and returns PC to the program origin
+- **Reset** resets the processor registers and returns PC to the execution entry
   while preserving the loaded program, memory, and ports.
 
 Run and Step automatically attempt to assemble source that has changed.
+After `HLT`, final machine state is preserved; select Reset before stepping or
+running the same assembled program again.
 
 ### 5. Inspect the result
 
@@ -394,6 +399,8 @@ The assembler supports:
 
 - Decimal: `42`
 - Intel-style hexadecimal: `2AH`
+- Leading-zero Intel hexadecimal when the first digit is `A`–`F`: `0FFH`,
+  `0DEADH`
 - Prefix hexadecimal: `0x2A`
 - Prefix binary: `0b101010`
 - Percent binary: `%101010`
@@ -403,6 +410,10 @@ The assembler supports:
 - Symbols and labels
 - Parentheses
 - Unary and binary `+` and `-`
+
+Tokens beginning with a letter are symbols, so names such as `DEADH` and `FFH`
+remain valid labels. Writing `FFH` without defining that symbol produces an
+error with a suggestion to use `0FFH` when a hexadecimal value was intended.
 
 Example:
 
@@ -630,7 +641,7 @@ confirmation prompt. Export important work before discarding it.
 ## Project structure
 
 ```text
-8085simu/
+open8085-lab/
 ├── app/
 │   ├── globals.css              # Workstation UI and responsive styles
 │   ├── layout.tsx               # Fonts and page metadata
@@ -697,8 +708,12 @@ The test command performs:
 Important covered cases include:
 
 - Forward labels and multiple number formats
+- Intel-style H-suffix labels and leading-zero hexadecimal diagnostics
 - `ORG`, `EQU`, `DB`, `DW`, and `DS`
-- Carry handling
+- Separate image origin and first-instruction execution entry
+- Exhaustive subtraction/compare Auxiliary Carry and borrow handling
+- Exhaustive `DCR` Auxiliary Carry behavior with Carry preservation
+- Five-T-state `HLT` behavior and reset interrupt masks
 - Conditional loops
 - CALL/RET stack behavior
 - Block copying
@@ -784,9 +799,10 @@ separate from simulator program data.
 
 - Select Assemble and resolve every line-specific error.
 - Ensure the source contains at least one executable instruction.
-- Check that PC points to the assembled origin.
+- Check that PC points to the first instruction in source order.
 - Ensure the program eventually reaches `HLT` or a breakpoint.
 - Reduce speed and use Step to find the problem.
+- After `HLT`, select Reset before using Step or Run again.
 
 ### Memory data disappears after assembly
 
@@ -825,6 +841,10 @@ when work must move between devices.
 Contributions should preserve the simulator's educational behavior and avoid
 unrelated CPU-engine changes.
 
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Security
+issues must follow the private reporting process in [SECURITY.md](SECURITY.md)
+instead of being posted in a public issue.
+
 ### Suggested workflow
 
 1. Create a branch.
@@ -857,6 +877,6 @@ practice.
 
 ## License
 
-No open-source license file is currently included in this repository. Add an
-appropriate license before permitting public reuse, modification, or
-redistribution.
+Open8085 Lab is licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2026 Mr. D. D. Joshi.

@@ -129,9 +129,9 @@ export class CPU8085 {
   public halted = false;
   public interruptEnabled = false;
   public readonly interruptMasks: InterruptMaskState = {
-    rst55: false,
-    rst65: false,
-    rst75: false,
+    rst55: true,
+    rst65: true,
+    rst75: true,
   };
   public readonly pendingInterrupts: InterruptPendingState = {
     rst55: false,
@@ -168,9 +168,9 @@ export class CPU8085 {
     this.halted = false;
     this.interruptEnabled = false;
     this.interruptEnablePending = false;
-    this.interruptMasks.rst55 = false;
-    this.interruptMasks.rst65 = false;
-    this.interruptMasks.rst75 = false;
+    this.interruptMasks.rst55 = true;
+    this.interruptMasks.rst65 = true;
+    this.interruptMasks.rst75 = true;
     this.pendingInterrupts.rst55 = false;
     this.pendingInterrupts.rst65 = false;
     this.pendingInterrupts.rst75 = false;
@@ -324,7 +324,7 @@ export class CPU8085 {
     const enableInterruptsAfterStep = this.interruptEnablePending;
     this.interruptEnablePending = false;
     this.pc = word(startPC + 1);
-    let cycles = 4;
+    let cycles: number;
 
     const fetch8 = (): number => {
       const result = this.memory[word(this.pc)];
@@ -339,7 +339,7 @@ export class CPU8085 {
     if (opcode >= 0x40 && opcode <= 0x7f) {
       if (opcode === 0x76) {
         this.halted = true;
-        cycles = 7;
+        cycles = 5;
       } else {
         const destination = (opcode >>> 3) & 7;
         const source = opcode & 7;
@@ -376,7 +376,7 @@ export class CPU8085 {
       const oldCarry = this.flags.cy;
       const value = this.readReg(register);
       const result = byte(value - 1);
-      this.flags.ac = (value & 0x0f) === 0;
+      this.flags.ac = (value & 0x0f) !== 0;
       this.setSZP(result);
       this.flags.cy = oldCarry;
       this.writeReg(register, result);
@@ -884,7 +884,8 @@ export class CPU8085 {
     const accumulator = byte(this.a);
     const operand = byte(value);
     const result = accumulator - operand - borrow;
-    this.flags.ac = (accumulator & 0x0f) - (operand & 0x0f) - borrow < 0;
+    this.flags.ac =
+      (accumulator & 0x0f) >= (operand & 0x0f) + borrow;
     this.flags.cy = result < 0;
     this.setSZP(byte(result));
     if (storeResult) this.a = byte(result);

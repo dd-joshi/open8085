@@ -118,7 +118,7 @@ const loadAssembly = (
   for (const segment of assembly.segments) {
     cpu.load(segment.bytes, segment.origin, false);
   }
-  cpu.setRegister("PC", assembly.origin);
+  cpu.setRegister("PC", assembly.entryPoint);
   if (example) applyExampleMemory(cpu, example);
 };
 
@@ -404,7 +404,7 @@ export function Simulator() {
       loadAssembly(cpu, result, example);
       setDirty(false);
       setStatusMessage(
-        `Assembled ${byteCount} bytes at ${hex(result.origin, 4)}H. ${
+        `Assembled ${byteCount} bytes. Entry PC ${hex(result.entryPoint, 4)}H. ${
           example ? "Example data loaded." : "Machine cleared for this experiment."
         }`,
       );
@@ -417,24 +417,24 @@ export function Simulator() {
   const resetMachine = useCallback(() => {
     setRunning(false);
     cpu.reset(false, false);
-    cpu.setRegister("PC", assembly?.origin ?? 0x2000);
+    cpu.setRegister("PC", assembly?.entryPoint ?? 0x2000);
     setTrace([]);
     clearInsight();
     skipBreakpointOnceRef.current = null;
     setStatusMessage("Processor reset. Program, memory, and ports are preserved.");
     syncMachine();
-  }, [assembly?.origin, clearInsight, cpu, syncMachine]);
+  }, [assembly?.entryPoint, clearInsight, cpu, syncMachine]);
 
   const stepOnce = useCallback(() => {
-    let activeAssembly = assembly;
+    if (running) return;
+
     if (dirty || !assembly?.success) {
-      activeAssembly = assembleProgram();
-      if (!activeAssembly) return;
+      if (!assembleProgram()) return;
     }
 
     if (cpu.halted) {
-      cpu.reset(false, false);
-      cpu.setRegister("PC", activeAssembly?.origin ?? 0x2000);
+      setStatusMessage("Halted — Reset before stepping.");
+      return;
     }
 
     try {
@@ -459,6 +459,7 @@ export function Simulator() {
     cpu,
     dirty,
     executeInstruction,
+    running,
     syncMachine,
   ]);
 
@@ -472,18 +473,13 @@ export function Simulator() {
       return;
     }
 
-    let activeAssembly = assembly;
     if (dirty || !assembly?.success) {
-      activeAssembly = assembleProgram();
-      if (!activeAssembly) return;
+      if (!assembleProgram()) return;
     }
 
     if (cpu.halted) {
-      cpu.reset(false, false);
-      cpu.setRegister("PC", activeAssembly?.origin ?? 0x2000);
-      setTrace([]);
-      clearInsight();
-      syncMachine();
+      setStatusMessage("Halted — Reset before running.");
+      return;
     }
 
     skipBreakpointOnceRef.current = cpu.pc;
@@ -492,11 +488,9 @@ export function Simulator() {
   }, [
     assembly,
     assembleProgram,
-    clearInsight,
     cpu,
     dirty,
     running,
-    syncMachine,
   ]);
 
   useEffect(() => {
@@ -537,6 +531,14 @@ export function Simulator() {
           batchBefore ??= execution.before;
           results.push(execution.result);
           latestRunInsightRef.current = execution.insight;
+          if (execution.result.halted) {
+            stopReason = `HLT reached at ${hex(execution.result.pc, 4)}H.`;
+            break;
+          }
+          if (breakpointAddresses.has(cpu.pc)) {
+            stopReason = `Breakpoint at ${hex(cpu.pc, 4)}H.`;
+            break;
+          }
         } catch (error) {
           stopReason =
             error instanceof Error
@@ -1350,8 +1352,8 @@ export function Simulator() {
               <div className="build-summary">
                 <strong>{dirty ? "Source edited" : "Build successful"}</strong>
                 <span>
-                  {assembledByteCount} bytes · origin{" "}
-                  {hex(assembly.origin, 4)}H ·{" "}
+                  {assembledByteCount} bytes · entry{" "}
+                  {hex(assembly.entryPoint, 4)}H ·{" "}
                   {Object.keys(assembly.symbols).length} labels
                 </span>
               </div>

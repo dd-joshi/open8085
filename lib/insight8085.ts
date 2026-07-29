@@ -260,7 +260,7 @@ function arithmeticBody(
           ? "Subtract the operand and incoming borrow from the Accumulator"
           : "Subtract the operand from the Accumulator",
       action: `${operator} = ${raw < 0 ? `-${hexMagnitude(raw)} (8-bit ${hex8(result)})` : hex8(raw)}; operand ${operandDescription}`,
-      effect: `${isCompare ? `A remains ${hex8(accumulator)}` : transition("A", accumulator, context.after.a)}; CY=${bit(context.after.flags.cy)} (${raw < 0 ? "unsigned borrow required" : "no unsigned borrow"}), AC=${bit(context.after.flags.ac)} (${context.after.flags.ac ? "low-nibble borrow" : "no low-nibble borrow"}); ${szpText(context.after.flags, result)}`,
+      effect: `${isCompare ? `A remains ${hex8(accumulator)}` : transition("A", accumulator, context.after.a)}; CY=${bit(context.after.flags.cy)} (${raw < 0 ? "unsigned borrow required" : "no unsigned borrow"}), AC=${bit(context.after.flags.ac)} (${context.after.flags.ac ? "D3 carry; no low-nibble borrow" : "no D3 carry; low-nibble borrow"}); ${szpText(context.after.flags, result)}`,
     };
   }
 
@@ -320,8 +320,8 @@ function explainIncrement(
       ? "low-nibble carry"
       : "no low-nibble carry"
     : context.after.flags.ac
-      ? "low-nibble borrow"
-      : "no low-nibble borrow";
+      ? "D3 carry; no low-nibble borrow"
+      : "no D3 carry; low-nibble borrow";
   const destination =
     name === "M" ? `M[${hex16(context.before.hl)}]` : name;
   return {

@@ -1,0 +1,55 @@
+name: Bug report
+description: Report reproducible incorrect behaviour in Open8085 Lab
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security vulnerabilities here. Follow `SECURITY.md` instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include the smallest ASM program, memory values, or UI steps that reproduce the issue.
+      placeholder: |
+        1. Assemble ...
+        2. Set memory ...
+        3. Step ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed-state
+    attributes:
+      label: Observed machine state
+      description: Include relevant registers, flags, PC, memory, ports, Insight text, or error messages.
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: Firefox 130 on Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: This report does not contain private data, credentials, or unpublished student solutions.
+          required: true
+

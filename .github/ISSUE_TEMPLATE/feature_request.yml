@@ -1,0 +1,38 @@
+name: Feature request
+description: Propose a focused educational or simulator improvement
+title: "[Feature] "
+body:
+  - type: textarea
+    id: teaching-problem
+    attributes:
+      label: Teaching or usability problem
+      description: Explain the student, instructor, or contributor problem this would solve.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Describe the smallest useful change.
+    validations:
+      required: true
+
+  - type: textarea
+    id: engine-impact
+    attributes:
+      label: CPU or assembler impact
+      description: State whether this changes instruction behaviour, flags, timing, memory, ports, or assembly syntax.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for a similar proposal.
+          required: true
+        - label: This proposal does not require publishing laboratory solution code.
+          required: true
+

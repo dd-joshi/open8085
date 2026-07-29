@@ -265,6 +265,24 @@ test("all 32 functional-flag combinations produce the canonical 8085 F byte", ()
   assert.equal(pedagogicalSample.toString(2).padStart(8, "0"), "00010111");
 });
 
+test("PUSH PSW stores the same canonical flag byte shown by the Flag Register", () => {
+  for (let combination = 0; combination < 32; combination += 1) {
+    const cpu = cpuFor(0xf5);
+    cpu.sp = 0x4000;
+    cpu.flags.s = (combination & 0x10) !== 0;
+    cpu.flags.z = (combination & 0x08) !== 0;
+    cpu.flags.ac = (combination & 0x04) !== 0;
+    cpu.flags.p = (combination & 0x02) !== 0;
+    cpu.flags.cy = (combination & 0x01) !== 0;
+    const expected = packFlagRegister(cpu.flags);
+
+    execute(cpu);
+
+    assert.equal(cpu.memory[0x3ffe], expected);
+    assert.equal(cpu.memory[0x3fff], 0x55);
+  }
+});
+
 test("all 256 opcodes produce exactly four nonempty Insight fields", () => {
   let documented = 0;
   let undocumented = 0;
@@ -342,11 +360,13 @@ test("CMP explains wrapped subtraction, unsigned borrow, flags, and preserved A"
 
   assert.equal(after.a, 0x32);
   assert.equal(after.flags.cy, true);
+  assert.equal(after.flags.ac, false);
   assert.equal(after.flags.s, true);
   assert.equal(after.flags.z, false);
   assert.match(insight.action, /-03H \(8-bit FDH\)/);
   assert.match(insight.effect, /A remains 32H/);
   assert.match(insight.effect, /CY=1 \(unsigned borrow required\)/);
+  assert.match(insight.effect, /AC=0 \(no D3 carry; low-nibble borrow\)/);
   assert.match(insight.effect, /S=1/);
   assert.match(insight.effect, /Z=0/);
 });
@@ -367,8 +387,10 @@ test("ADC and SBB include the incoming Carry as carry or borrow", () => {
   sbb.flags.cy = true;
   const sbbResult = execute(sbb);
   assert.equal(sbbResult.after.a, 0xff);
+  assert.equal(sbbResult.after.flags.ac, false);
   assert.match(sbbResult.insight.action, /00H - 00H - CY\(1\)/);
   assert.match(sbbResult.insight.effect, /unsigned borrow required/);
+  assert.match(sbbResult.insight.effect, /no D3 carry; low-nibble borrow/);
 });
 
 test("INR and DCR report that Carry is preserved", () => {
@@ -387,8 +409,17 @@ test("INR and DCR report that Carry is preserved", () => {
   decrement.flags.cy = false;
   const decrementResult = execute(decrement);
   assert.equal(decrement.memory[0x3200], 0xff);
+  assert.equal(decrementResult.after.flags.ac, false);
   assert.match(decrementResult.insight.effect, /written 00H→FFH/);
   assert.match(decrementResult.insight.effect, /CY remains 0/);
+  assert.match(decrementResult.insight.effect, /no D3 carry; low-nibble borrow/);
+
+  const decrementWithoutNibbleBorrow = cpuFor(0x05);
+  decrementWithoutNibbleBorrow.b = 0x01;
+  const noBorrowResult = execute(decrementWithoutNibbleBorrow);
+  assert.equal(noBorrowResult.after.b, 0x00);
+  assert.equal(noBorrowResult.after.flags.ac, true);
+  assert.match(noBorrowResult.insight.effect, /D3 carry; no low-nibble borrow/);
 });
 
 test("M operands use the pre-instruction HL address even when H changes", () => {
@@ -772,7 +803,9 @@ test("RIM reports sampled bits and the deferred EI transition accurately", () =>
   cpu.serialInput = true;
   cpu.pendingInterrupts.rst75 = true;
   cpu.pendingInterrupts.rst55 = true;
+  cpu.interruptMasks.rst75 = false;
   cpu.interruptMasks.rst65 = true;
+  cpu.interruptMasks.rst55 = false;
 
   execute(cpu);
   const { insight, before, after } = execute(cpu);

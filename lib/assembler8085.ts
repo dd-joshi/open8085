@@ -47,6 +47,11 @@ export interface Assemble8085Result {
   /** Lowest emitted address, or defaultOrigin when no bytes were emitted. */
   origin: number;
   /**
+   * Address of the first instruction in source order. Data-only programs fall
+   * back to origin.
+   */
+  entryPoint: number;
+  /**
    * A contiguous image beginning at origin. Gaps made by ORG are zero-filled.
    * Use segments when gaps must be distinguished from emitted zeroes.
    */
@@ -564,7 +569,8 @@ export const INSTRUCTION_SET_8085: readonly InstructionMetadata[] = [
     bytes: 1,
     opcode: "76",
     category: "machine-control",
-    description: "Halt until an interrupt or reset.",
+    description:
+      "Halt CPU execution. Interrupt wake-up is not modeled by this simulator.",
   },
   {
     mnemonic: "EI",
@@ -1069,7 +1075,7 @@ function parseNumericLiteral(text: string): number {
   if (/^%[01]+$/.test(compact)) {
     return Number.parseInt(compact.slice(1), 2);
   }
-  if (/^[0-9A-F]+H$/i.test(compact)) {
+  if (/^[0-9][0-9A-F]*H$/i.test(compact)) {
     return Number.parseInt(compact.slice(0, -1), 16);
   }
   if (/^[01]+B$/i.test(compact)) {
@@ -1163,14 +1169,7 @@ function tokenizeExpression(expression: string): ExpressionToken[] {
         end += 1;
       }
       const text = expression.slice(index, end);
-      // Intel notation commonly permits FFH as well as 0FFH. This does make a
-      // symbol consisting solely of hex digits plus H ambiguous; matching the
-      // processor's established numeric convention is the useful behavior.
-      if (/^[A-F][0-9A-F]*H$/i.test(text)) {
-        tokens.push({ kind: "number", value: parseNumericLiteral(text), text });
-      } else {
-        tokens.push({ kind: "identifier", text });
-      }
+      tokens.push({ kind: "identifier", text });
       index = end;
       continue;
     }
@@ -1272,6 +1271,15 @@ function formatHex(value: number, width: number): string {
   return `0x${value.toString(16).toUpperCase().padStart(width, "0")}`;
 }
 
+function intelHexLiteralHint(unresolved: readonly string[]): string {
+  const candidate = unresolved.find((name) =>
+    /^[A-F][0-9A-F]*H$/i.test(name),
+  );
+  if (!candidate) return "";
+  const literal = candidate.toUpperCase();
+  return ` If hexadecimal ${literal} was intended, write 0${literal}.`;
+}
+
 function evaluatedOperand(
   expression: string,
   currentAddress: number,
@@ -1304,7 +1312,7 @@ function evaluatedOperand(
         errors,
         seenErrors,
         line,
-        `Undefined symbol${evaluation.unresolved.length === 1 ? "" : "s"} in ${description}: ${evaluation.unresolved.join(", ")}.`,
+        `Undefined symbol${evaluation.unresolved.length === 1 ? "" : "s"} in ${description}: ${evaluation.unresolved.join(", ")}.${intelHexLiteralHint(evaluation.unresolved)}`,
       );
     }
     return 0;
@@ -1914,7 +1922,7 @@ function resolveEquSymbols(
       seenErrors,
       equ.line,
       undefinedNames.length > 0
-        ? `Cannot resolve EQU ${equ.name}; undefined symbol${undefinedNames.length === 1 ? "" : "s"}: ${undefinedNames.join(", ")}.`
+        ? `Cannot resolve EQU ${equ.name}; undefined symbol${undefinedNames.length === 1 ? "" : "s"}: ${undefinedNames.join(", ")}.${intelHexLiteralHint(undefinedNames)}`
         : `Cannot resolve EQU ${equ.name}; the EQU definitions are circular.`,
     );
     symbols.set(equ.name, 0);
@@ -1967,6 +1975,7 @@ export function assemble8085(
   const definedAt = new Map<string, number>();
   const pendingEqus: PendingEqu[] = [];
   let address = initialOrigin;
+  let entryPoint: number | null = null;
 
   for (const parsed of parsedLines) {
     if (!parsed.mnemonic && !parsed.label) {
@@ -2094,7 +2103,7 @@ export function assemble8085(
             errors,
             seenErrors,
             parsed.line,
-            `ORG must be resolvable on the first pass; unresolved symbol${evaluation.unresolved.length === 1 ? "" : "s"}: ${evaluation.unresolved.join(", ")}.`,
+            `ORG must be resolvable on the first pass; unresolved symbol${evaluation.unresolved.length === 1 ? "" : "s"}: ${evaluation.unresolved.join(", ")}.${intelHexLiteralHint(evaluation.unresolved)}`,
           );
         } else if (
           !Number.isInteger(evaluation.value) ||
@@ -2180,7 +2189,7 @@ export function assemble8085(
             errors,
             seenErrors,
             parsed.line,
-            `DS size must be resolvable on the first pass; unresolved symbol${evaluation.unresolved.length === 1 ? "" : "s"}: ${evaluation.unresolved.join(", ")}.`,
+            `DS size must be resolvable on the first pass; unresolved symbol${evaluation.unresolved.length === 1 ? "" : "s"}: ${evaluation.unresolved.join(", ")}.${intelHexLiteralHint(evaluation.unresolved)}`,
           );
         } else if (
           !Number.isInteger(evaluation.value) ||
@@ -2217,6 +2226,7 @@ export function assemble8085(
       continue;
     }
 
+    entryPoint ??= address;
     const bytes = encodeInstruction(
       mnemonic,
       parsed.operands,
@@ -2354,6 +2364,7 @@ export function assemble8085(
   return {
     success: sortedErrors.length === 0,
     origin,
+    entryPoint: entryPoint ?? origin,
     bytes,
     segments,
     symbols: symbolRecord(symbols),
