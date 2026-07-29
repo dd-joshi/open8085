@@ -67,7 +67,7 @@ student account, or server-side storage.
 | Debugging | Source-line breakpoints, current-line indication, disassembly, T-state counts, and instruction trace |
 | Insight | Deterministic three-line explanation of the latest completed instruction using its actual operands and effects |
 | Registers | Editable A, B, C, D, E, H, L, BC, DE, HL, SP, and PC values |
-| Flags | Canonical 8-bit F register showing S, Z, AC, P, CY, and the fixed bit positions |
+| Flags | Canonical 8-bit F register with synchronized hexadecimal/binary values and all D7–D0 positions |
 | Memory | 64 KiB address space with a 32-byte editable inspector |
 | I/O | 256 byte-wide ports with direct inspection and editing |
 | Trainer board | Eight output LEDs on port `01H` and eight input switches on port `02H` |
@@ -252,11 +252,30 @@ The processor panel displays:
 - Register pairs: BC, DE, and HL
 - 16-bit registers: SP and PC
 - A complete read-only F register in the canonical `S Z 0 AC 0 P 1 CY`
-  layout
+  layout, shown in both hexadecimal and binary
 - Total T-states
 
 Editable register fields accept hexadecimal values. Press Enter or move focus
 away from a field to apply a change.
+
+The Flag Register heading keeps both representations together:
+
+```text
+F = 17H · 00010111B
+```
+
+All eight physical bit positions remain visible and appear from D7 to D0:
+
+| Bit | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Meaning | S | Z | Unused | AC | Unused | P | Fixed | CY |
+| Required value | Flag | Flag | `0` | Flag | `0` | Flag | `1` | Flag |
+
+`D5` and `D3` are unused and always display `0`. `D1` is the fixed 8085 bit and
+always displays `1`, so a cleared functional-flag state is
+`F = 02H · 00000010B`. Only the functional flags S, Z, AC, P, and CY can receive
+the brief instruction-change highlight; unused and fixed bits remain muted and
+noninteractive.
 
 ### Insight
 
@@ -687,6 +706,8 @@ Important covered cases include:
 - Packed BCD adjustment
 - `RIM`, `SIM`, delayed `EI`, stack/PSW, and conditional-flow explanations
 - Canonical F-register values for every functional-flag combination
+- Exact D7–D0 order, hexadecimal/binary agreement, and fixed/unused F-register
+  bits
 - Invalid and malicious experiment data
 - Ten-item experiment pagination
 - Converter boundaries from 0 to 255
