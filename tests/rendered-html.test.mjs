@@ -32,6 +32,11 @@ test("server-renders the Open8085 simulator workspace", async () => {
 
   const html = await response.text();
   const textHtml = html.replaceAll("<!-- -->", "");
+  const visibleText = textHtml
+    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ");
   assert.match(html, /<title>Open8085 Lab/);
   assert.match(html, /Free browser-based 8085 simulator/i);
   assert.match(html, /Open8085 Lab/);
@@ -44,10 +49,31 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.match(html, />Insight</);
   assert.match(html, /Step the program to see instruction insight/i);
   assert.match(html, /Flag register/i);
-  assert.match(textHtml, /F\s*=\s*02H/i);
-  for (let bit = 7; bit >= 0; bit -= 1) {
-    assert.match(textHtml, new RegExp(`>D${bit}<`));
-  }
+  assert.match(visibleText, /F\s*=\s*02H\s*·\s*00000010B/i);
+  const flagGrid = textHtml.match(
+    /<div class="flag-byte-grid"[^>]*>([\s\S]*?)<\/div>/,
+  )?.[1];
+  assert.ok(flagGrid, "The complete Flag Register grid should render");
+  const flagCells = [
+    ...flagGrid.matchAll(
+      /<span class="flag-bit([^"]*)"><span class="flag-position">D(\d)<\/span><span class="flag-name">([^<]+)<\/span><strong>([01])<\/strong><\/span>/g,
+    ),
+  ].map((match) => ({
+    bit: Number(match[2]),
+    meaning: match[3],
+    value: Number(match[4]),
+    constant: match[1].includes("flag-bit--constant"),
+  }));
+  assert.deepEqual(flagCells, [
+    { bit: 7, meaning: "S", value: 0, constant: false },
+    { bit: 6, meaning: "Z", value: 0, constant: false },
+    { bit: 5, meaning: "UNUSED", value: 0, constant: true },
+    { bit: 4, meaning: "AC", value: 0, constant: false },
+    { bit: 3, meaning: "UNUSED", value: 0, constant: true },
+    { bit: 2, meaning: "P", value: 0, constant: false },
+    { bit: 1, meaning: "FIX", value: 1, constant: true },
+    { bit: 0, meaning: "CY", value: 0, constant: false },
+  ]);
   assert.equal((textHtml.match(/Total T-states/gi) ?? []).length, 1);
   assert.match(html, /Program\.asm/);
   assert.match(html, />Examples</);
@@ -69,9 +95,10 @@ test("server-renders the Open8085 simulator workspace", async () => {
 });
 
 test("ships the real simulator core without starter preview files", async () => {
-  const [page, simulator, packageJson] = await Promise.all([
+  const [page, simulator, globals, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/simulator.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
@@ -80,6 +107,14 @@ test("ships the real simulator core without starter preview files", async () => 
   assert.match(simulator, /new CPU8085/);
   assert.match(simulator, /createInstructionInsight/);
   assert.match(simulator, /Virtual trainer kit/);
+  assert.match(simulator, /flag-bit--constant/);
+  assert.doesNotMatch(simulator, /entry\.fixed|\b"fixed"\b/);
+  assert.match(
+    simulator,
+    /entry\.flag\s*&&\s*changedFlags\.has\(entry\.flag\)/,
+  );
+  assert.match(globals, /\.flag-bit--constant/);
+  assert.doesNotMatch(globals, /\.flag-bit\.fixed/);
   assert.doesNotMatch(
     simulator,
     /flag-stack|flag-grid|status-telemetry|currentInstruction/,

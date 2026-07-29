@@ -985,12 +985,13 @@ export function Simulator() {
   const outputPort = cpu.ports[0x01];
   const inputPort = cpu.ports[0x02];
   const flagByte = packFlagRegister(snapshot.flags);
+  const flagBinary = flagByte.toString(2).padStart(8, "0");
   const flagBits: ReadonlyArray<{
     bit: number;
     shortLabel: string;
     value: boolean;
     flag?: FlagKey;
-    fixed?: boolean;
+    constant?: boolean;
   }> = [
     {
       bit: 7,
@@ -1006,9 +1007,9 @@ export function Simulator() {
     },
     {
       bit: 5,
-      shortLabel: "—",
+      shortLabel: "UNUSED",
       value: false,
-      fixed: true,
+      constant: true,
     },
     {
       bit: 4,
@@ -1018,9 +1019,9 @@ export function Simulator() {
     },
     {
       bit: 3,
-      shortLabel: "—",
+      shortLabel: "UNUSED",
       value: false,
-      fixed: true,
+      constant: true,
     },
     {
       bit: 2,
@@ -1032,7 +1033,7 @@ export function Simulator() {
       bit: 1,
       shortLabel: "FIX",
       value: true,
-      fixed: true,
+      constant: true,
     },
     {
       bit: 0,
@@ -1460,17 +1461,22 @@ export function Simulator() {
                   role="group"
                   aria-label={`Flag Register F, hexadecimal ${hex(
                     flagByte,
-                  )}H. Sign ${Number(snapshot.flags.s)}, Zero ${Number(
+                  )}H, binary ${flagBinary}B. Sign ${Number(
+                    snapshot.flags.s,
+                  )}, Zero ${Number(
                     snapshot.flags.z,
-                  )}, bit 5 fixed zero, Auxiliary Carry ${Number(
+                  )}, bit 5 unused and zero, Auxiliary Carry ${Number(
                     snapshot.flags.ac,
-                  )}, bit 3 fixed zero, Parity ${Number(
+                  )}, bit 3 unused and zero, Parity ${Number(
                     snapshot.flags.p,
                   )}, bit 1 fixed one, Carry ${Number(snapshot.flags.cy)}.`}
                 >
                   <div className="flag-register-heading">
                     <span className="field-label">Flag register</span>
-                    <strong>F = {hex(flagByte)}H</strong>
+                    <strong>
+                      F = {hex(flagByte)}H <span aria-hidden="true">·</span>{" "}
+                      {flagBinary}B
+                    </strong>
                   </div>
                   <div className="flag-byte-grid" aria-hidden="true">
                     {flagBits.map((entry) => (
@@ -1478,7 +1484,7 @@ export function Simulator() {
                         className={[
                           "flag-bit",
                           entry.value ? "on" : "",
-                          entry.fixed ? "fixed" : "",
+                          entry.constant ? "flag-bit--constant" : "",
                           entry.flag && changedFlags.has(entry.flag)
                             ? "changed"
                             : "",

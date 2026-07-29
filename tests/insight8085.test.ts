@@ -254,6 +254,15 @@ test("all 32 functional-flag combinations produce the canonical 8085 F byte", ()
     packFlagRegister({ s: true, z: true, ac: true, p: true, cy: true }),
     0xd7,
   );
+  const pedagogicalSample = packFlagRegister({
+    s: false,
+    z: false,
+    ac: true,
+    p: true,
+    cy: true,
+  });
+  assert.equal(pedagogicalSample, 0x17);
+  assert.equal(pedagogicalSample.toString(2).padStart(8, "0"), "00010111");
 });
 
 test("all 256 opcodes produce exactly four nonempty Insight fields", () => {
