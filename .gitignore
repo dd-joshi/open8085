@@ -60,6 +60,7 @@ yarn-error.log*
 /temp/
 /tmp/
 /temp.text
+/temporary.md
 *.tmp
 *.temp
 *.swp
