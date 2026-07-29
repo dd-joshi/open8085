@@ -2,7 +2,7 @@
 
 **IITRAM · Department of ECSE**
 
-Prepared by **Mr. D. D. Joshi**
+Designed by **D. Joshi**
 
 A browser-based Intel 8085 programming laboratory for writing, assembling,
 running, debugging, and studying assembly-language programs without installing
@@ -870,7 +870,7 @@ instead of being posted in a public issue.
 
 **Open8085 Lab — IITRAM, Department of ECSE**
 
-Prepared by **Mr. D. D. Joshi**
+Designed by **D. Joshi**
 
 The interface is intended for microprocessor laboratory teaching and student
 practice.

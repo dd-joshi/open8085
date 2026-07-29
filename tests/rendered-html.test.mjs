@@ -42,8 +42,8 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.match(html, /Open8085 Lab/);
   assert.match(html, /IITRAM/);
   assert.match(html, /Dept\. of ECSE/);
-  assert.match(html, /Prepared by/);
-  assert.match(html, /Mr\. D\. D\. Joshi/);
+  assert.match(html, /Designed by/);
+  assert.match(html, /D\. Joshi/);
   assert.match(html, /Virtual trainer kit/);
   assert.match(html, /Processor state/);
   assert.match(html, />Insight</);

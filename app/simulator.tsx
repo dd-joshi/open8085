@@ -1063,7 +1063,7 @@ export function Simulator() {
         </div>
         <div className="topbar-meta">
           <span className="author-credit">
-            Prepared by <strong>Mr. D. D. Joshi</strong>
+            Designed by <strong>D. Joshi</strong>
           </span>
           <span className="equipment-id">Intel 8085A · 8-bit</span>
           <button
