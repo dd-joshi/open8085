@@ -90,6 +90,11 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.match(html, /Hexadecimal byte value/i);
   assert.match(html, /Decimal byte value/i);
   assert.match(html, /Binary byte value/i);
+  assert.match(
+    html,
+    /href="https:\/\/github\.com\/dd-joshi\/open8085"[^>]*target="_blank"/i,
+  );
+  assert.match(html, /View Open8085 source code on GitHub/i);
   assert.match(html, /https:\/\/open8085\.example\/og\.png/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

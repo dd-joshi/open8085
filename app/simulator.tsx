@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Github,
   Hammer,
   Pause,
   Play,
@@ -1337,34 +1338,46 @@ export function Simulator() {
             />
           </div>
           <div className="editor-footer" aria-live="polite">
-            {assembly === null ? (
-              <div className="build-summary">
-                <strong>
-                  {selectedExperiment ? "Ready for code" : "Assembly required"}
-                </strong>
-                <span>
-                  {selectedExperiment
-                    ? "Add the complete 8085 program below the two-line header."
-                    : "Assemble the restored source before running."}
-                </span>
-              </div>
-            ) : assembly.success ? (
-              <div className="build-summary">
-                <strong>{dirty ? "Source edited" : "Build successful"}</strong>
-                <span>
-                  {assembledByteCount} bytes · entry{" "}
-                  {hex(assembly.entryPoint, 4)}H ·{" "}
-                  {Object.keys(assembly.symbols).length} labels
-                </span>
-              </div>
-            ) : (
-              <div className="build-summary error">
-                <strong>
-                  {assembly?.errors.length ?? 0} assembler{" "}
-                  {(assembly?.errors.length ?? 0) === 1 ? "error" : "errors"}
-                </strong>
-              </div>
-            )}
+            <div className="editor-footer-row">
+              {assembly === null ? (
+                <div className="build-summary">
+                  <strong>
+                    {selectedExperiment ? "Ready for code" : "Assembly required"}
+                  </strong>
+                  <span>
+                    {selectedExperiment
+                      ? "Add the complete 8085 program below the two-line header."
+                      : "Assemble the restored source before running."}
+                  </span>
+                </div>
+              ) : assembly.success ? (
+                <div className="build-summary">
+                  <strong>{dirty ? "Source edited" : "Build successful"}</strong>
+                  <span>
+                    {assembledByteCount} bytes · entry{" "}
+                    {hex(assembly.entryPoint, 4)}H ·{" "}
+                    {Object.keys(assembly.symbols).length} labels
+                  </span>
+                </div>
+              ) : (
+                <div className="build-summary error">
+                  <strong>
+                    {assembly?.errors.length ?? 0} assembler{" "}
+                    {(assembly?.errors.length ?? 0) === 1 ? "error" : "errors"}
+                  </strong>
+                </div>
+              )}
+              <a
+                className="source-link"
+                href="https://github.com/dd-joshi/open8085"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View Open8085 source code on GitHub"
+              >
+                <Github size={12} aria-hidden="true" />
+                GitHub
+              </a>
+            </div>
             {assembly && !assembly.success && (
               <div className="error-list">
                 {assembly.errors.map((error, index) => (
