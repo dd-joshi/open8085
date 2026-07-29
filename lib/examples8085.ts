@@ -108,54 +108,6 @@ HLT`,
     ],
   },
   {
-    id: "largest-in-array",
-    title: "Find the largest value in an array",
-    difficulty: "Beginner",
-    learningGoal:
-      "Scan an array and use CMP plus the carry flag to keep the largest unsigned byte.",
-    source: `; 2500H holds the element count.
-; The array begins at 2501H.
-ORG 2000H
-
-LDA 2500H
-MOV C,A
-ORA A
-JZ EMPTY
-
-LXI H,2501H
-MOV A,M
-DCR C
-JZ DONE
-
-SCAN: INX H
-CMP M
-JNC KEEP
-MOV A,M
-KEEP: DCR C
-JNZ SCAN
-
-DONE: STA 2600H
-HLT
-
-EMPTY: MVI A,00H
-STA 2600H
-HLT`,
-    setup: {
-      memory: [
-        "2500H = 06H (six elements)",
-        "2501H..2506H = 14H, E2H, 7FH, A0H, 39H, C5H",
-      ],
-      ports: ["No I/O port setup is required."],
-    },
-    expectedResult:
-      "2600H = E2H. If the count at 2500H is zero, the program stores 00H.",
-    tips: [
-      "A starts with the first element and remains the current maximum.",
-      "After CMP M, CY = 1 means A is smaller than the memory byte.",
-      "The count check prevents an empty array from being read.",
-    ],
-  },
-  {
     id: "block-copy",
     title: "Copy a block of memory",
     difficulty: "Beginner",
@@ -237,59 +189,6 @@ RET`,
       "64H is 100 decimal, so B limits the example to exactly one 00-to-99 cycle.",
       "CALL needs a valid stack, which is why SP is initialized before the loop.",
       "Change the delay constants to match the simulated or physical clock speed.",
-    ],
-  },
-  {
-    id: "fibonacci-table",
-    title: "Build a Fibonacci table in memory",
-    difficulty: "Intermediate",
-    learningGoal:
-      "Generate a sequence iteratively while using registers for state and HL as an output pointer.",
-    source: `; 2500H holds the number of terms.
-; Store 8-bit Fibonacci terms from 2600H onward.
-ORG 2000H
-
-LDA 2500H
-MOV C,A
-ORA A
-JZ FINISH
-
-LXI H,2600H
-MVI D,00H
-MVI E,01H
-MOV M,D
-INX H
-DCR C
-JZ FINISH
-
-MOV M,E
-INX H
-DCR C
-JZ FINISH
-
-FIBLOOP: MOV A,D
-ADD E
-MOV D,E
-MOV E,A
-MOV M,A
-INX H
-DCR C
-JNZ FIBLOOP
-
-FINISH: HLT`,
-    setup: {
-      memory: [
-        "2500H = 0AH (generate ten terms)",
-        "2600H..2609H may contain any values before execution.",
-      ],
-      ports: ["No I/O port setup is required."],
-    },
-    expectedResult:
-      "2600H..2609H contain 00H, 01H, 01H, 02H, 03H, 05H, 08H, 0DH, 15H, 22H.",
-    tips: [
-      "D and E hold the previous two terms; A computes the next term.",
-      "The early exits correctly handle requests for zero, one, or two terms.",
-      "Keep the count at 0EH or less if every term must fit in eight bits.",
     ],
   },
 ] as const satisfies readonly Example8085[];

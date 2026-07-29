@@ -31,12 +31,39 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
+  const textHtml = html.replaceAll("<!-- -->", "");
   assert.match(html, /<title>Open8085 Lab/);
   assert.match(html, /Free browser-based 8085 simulator/i);
   assert.match(html, /Open8085 Lab/);
+  assert.match(html, /IITRAM/);
+  assert.match(html, /Dept\. of ECSE/);
+  assert.match(html, /Prepared by/);
+  assert.match(html, /Mr\. D\. D\. Joshi/);
   assert.match(html, /Virtual trainer kit/);
   assert.match(html, /Processor state/);
+  assert.match(html, />Insight</);
+  assert.match(html, /Step the program to see instruction insight/i);
+  assert.match(html, /Flag register/i);
+  assert.match(textHtml, /F\s*=\s*02H/i);
+  for (let bit = 7; bit >= 0; bit -= 1) {
+    assert.match(textHtml, new RegExp(`>D${bit}<`));
+  }
+  assert.equal((textHtml.match(/Total T-states/gi) ?? []).length, 1);
   assert.match(html, /Program\.asm/);
+  assert.match(html, />Examples</);
+  assert.match(html, />Experiments</);
+  assert.match(textHtml, /01\s*·\s*Write an ALP to multiply two 8-bit data/i);
+  assert.match(textHtml, /01–02 of 02/i);
+  assert.doesNotMatch(html, /Fibonacci|Find the largest/i);
+  assert.match(html, /1,000 instructions per second/i);
+  assert.doesNotMatch(
+    html,
+    /100 instructions per second|10,000 instructions per second/i,
+  );
+  assert.match(html, /Number converter/i);
+  assert.match(html, /Hexadecimal byte value/i);
+  assert.match(html, /Decimal byte value/i);
+  assert.match(html, /Binary byte value/i);
   assert.match(html, /https:\/\/open8085\.example\/og\.png/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
@@ -51,13 +78,20 @@ test("ships the real simulator core without starter preview files", async () => 
   assert.match(page, /<Simulator \/>/);
   assert.match(simulator, /assemble8085/);
   assert.match(simulator, /new CPU8085/);
+  assert.match(simulator, /createInstructionInsight/);
   assert.match(simulator, /Virtual trainer kit/);
+  assert.doesNotMatch(
+    simulator,
+    /flag-stack|flag-grid|status-telemetry|currentInstruction/,
+  );
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   await assert.rejects(
     access(new URL("../app/_sites-preview", import.meta.url)),
   );
   await access(new URL("../lib/cpu8085.ts", import.meta.url));
   await access(new URL("../lib/assembler8085.ts", import.meta.url));
+  await access(new URL("../lib/insight8085.ts", import.meta.url));
+  await access(new URL("../lib/lab-experiments.json", import.meta.url));
   await access(new URL("../public/og.png", import.meta.url));
   await access(projectRoot);
 });

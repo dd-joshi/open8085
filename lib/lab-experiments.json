@@ -1,0 +1,10 @@
+[
+  {
+    "number": 1,
+    "aim": "Write an ALP to multiply two 8-bit data stored at different memory locations and store the 16-bit result from E001H onward."
+  },
+  {
+    "number": 2,
+    "aim": "Write an ALP to multiply a 16-bit number by an 8-bit multiplier and store the 24-bit result from D000H onward."
+  }
+]
