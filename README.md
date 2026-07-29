@@ -1,7 +1,5 @@
 # Open8085 Lab
 
-**IITRAM · Department of ECSE**
-
 Designed by **D. Joshi**
 
 A browser-based Intel 8085 programming laboratory for writing, assembling,
