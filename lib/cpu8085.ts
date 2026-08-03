@@ -100,8 +100,14 @@ const ALU_IMMEDIATE_NAMES = ["ADI", "ACI", "SUI", "SBI", "ANI", "XRI", "ORI", "C
 
 const byte = (value: number): number => value & 0xff;
 const word = (value: number): number => value & 0xffff;
-const hex8 = (value: number): string => `${byte(value).toString(16).toUpperCase().padStart(2, "0")}H`;
-const hex16 = (value: number): string => `${word(value).toString(16).toUpperCase().padStart(4, "0")}H`;
+const hex8 = (value: number): string => {
+  const digits = byte(value).toString(16).toUpperCase().padStart(2, "0");
+  return `${/^[A-F]/.test(digits) ? "0" : ""}${digits}H`;
+};
+const hex16 = (value: number): string => {
+  const digits = word(value).toString(16).toUpperCase().padStart(4, "0");
+  return `${/^[A-F]/.test(digits) ? "0" : ""}${digits}H`;
+};
 
 /** Dependency-free Intel 8085 CPU core suitable for browser UIs. */
 export class CPU8085 {
