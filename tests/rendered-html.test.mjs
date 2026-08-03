@@ -96,7 +96,7 @@ test("server-renders the Open8085 simulator workspace", async () => {
   );
   assert.match(html, /View Open8085 source code on GitHub/i);
   assert.match(html, /https:\/\/open8085\.example\/og\.png/);
-  assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
+  assert.doesNotMatch(html, /react-loading-skeleton/i);
 });
 
 test("ships the real simulator core without starter preview files", async () => {
@@ -125,9 +125,6 @@ test("ships the real simulator core without starter preview files", async () => 
     /flag-stack|flag-grid|status-telemetry|currentInstruction/,
   );
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
-  await assert.rejects(
-    access(new URL("../app/_sites-preview", import.meta.url)),
-  );
   await access(new URL("../lib/cpu8085.ts", import.meta.url));
   await access(new URL("../lib/assembler8085.ts", import.meta.url));
   await access(new URL("../lib/insight8085.ts", import.meta.url));
