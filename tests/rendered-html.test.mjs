@@ -109,6 +109,8 @@ test("ships the real simulator core without starter preview files", async () => 
 
   assert.match(page, /<Simulator \/>/);
   assert.match(simulator, /assemble8085/);
+  assert.match(simulator, /instruction\.opcode/);
+  assert.match(simulator, /instruction\.tStates/);
   assert.match(simulator, /new CPU8085/);
   assert.match(simulator, /createInstructionInsight/);
   assert.match(simulator, /Virtual trainer kit/);

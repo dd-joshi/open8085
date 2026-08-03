@@ -1974,6 +1974,10 @@ export function Simulator() {
                     <span>{instruction.bytes}B</span>
                   </div>
                   <code>{instruction.syntax}</code>
+                  <div className="instruction-facts">
+                    <span>Opcode {instruction.opcode}</span>
+                    <span>T-states {instruction.tStates}</span>
+                  </div>
                   <p>{instruction.description}</p>
                 </article>
               ))}

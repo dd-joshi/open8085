@@ -19,9 +19,12 @@ export interface InstructionMetadata {
   operands: string;
   bytes: 1 | 2 | 3;
   opcode: string;
+  tStates: string;
   category: InstructionCategory;
   description: string;
 }
+
+type InstructionMetadataDefinition = Omit<InstructionMetadata, "tStates">;
 
 export interface AssemblyError {
   /** One-based source line; zero is reserved for invalid assembler options. */
@@ -69,7 +72,43 @@ export interface Assemble8085Result {
  * Instruction reference data suitable for autocomplete, a help panel, or a
  * mnemonic picker. Opcode strings use Intel's conventional r/rp placeholders.
  */
-export const INSTRUCTION_SET_8085: readonly InstructionMetadata[] = [
+function timingEntries(
+  mnemonics: readonly string[],
+  tStates: string,
+): Record<string, string> {
+  return Object.fromEntries(mnemonics.map((mnemonic) => [mnemonic, tStates]));
+}
+
+const INSTRUCTION_T_STATES: Readonly<Record<string, string>> = {
+  MOV: "4 (register), 7 (memory)",
+  MVI: "7 (register), 10 (memory)",
+  INR: "4 (register), 10 (memory)",
+  DCR: "4 (register), 10 (memory)",
+  ...timingEntries(
+    ["ADD", "ADC", "SUB", "SBB", "ANA", "XRA", "ORA", "CMP"],
+    "4 (register), 7 (memory)",
+  ),
+  ...timingEntries(
+    ["ADI", "ACI", "SUI", "SBI", "ANI", "XRI", "ORI", "CPI", "LDAX", "STAX"],
+    "7",
+  ),
+  ...timingEntries(["INX", "DCX", "PCHL", "SPHL"], "6"),
+  ...timingEntries(["LXI", "DAD", "JMP", "RET", "POP", "IN", "OUT"], "10"),
+  ...timingEntries(["LDA", "STA"], "13"),
+  ...timingEntries(["LHLD", "SHLD", "XTHL"], "16"),
+  ...timingEntries(
+    ["XCHG", "DAA", "RLC", "RRC", "RAL", "RAR", "CMA", "CMC", "STC", "NOP", "EI", "DI", "RIM", "SIM"],
+    "4",
+  ),
+  ...timingEntries(["JNZ", "JZ", "JNC", "JC", "JPO", "JPE", "JP", "JM"], "7 (not taken), 10 (taken)"),
+  CALL: "18",
+  ...timingEntries(["CNZ", "CZ", "CNC", "CC", "CPO", "CPE", "CP", "CM"], "9 (not taken), 18 (taken)"),
+  ...timingEntries(["RNZ", "RZ", "RNC", "RC", "RPO", "RPE", "RP", "RM"], "6 (not taken), 12 (taken)"),
+  ...timingEntries(["PUSH", "RST"], "12"),
+  HLT: "5",
+};
+
+const INSTRUCTION_DEFINITIONS_8085: readonly InstructionMetadataDefinition[] = [
   {
     mnemonic: "MOV",
     syntax: "MOV dst, src",
@@ -446,7 +485,7 @@ export const INSTRUCTION_SET_8085: readonly InstructionMetadata[] = [
       ["CM", "FC", "Call when sign is negative."],
     ] as const
   ).map(
-    ([mnemonic, opcode, description]): InstructionMetadata => ({
+    ([mnemonic, opcode, description]): InstructionMetadataDefinition => ({
       mnemonic,
       syntax: `${mnemonic} address`,
       operands: "address16",
@@ -469,7 +508,7 @@ export const INSTRUCTION_SET_8085: readonly InstructionMetadata[] = [
       ["RM", "F8", "Return when sign is negative."],
     ] as const
   ).map(
-    ([mnemonic, opcode, description]): InstructionMetadata => ({
+    ([mnemonic, opcode, description]): InstructionMetadataDefinition => ({
       mnemonic,
       syntax: mnemonic,
       operands: "",
@@ -609,6 +648,15 @@ export const INSTRUCTION_SET_8085: readonly InstructionMetadata[] = [
     description: "Set interrupt masks and serial output from A.",
   },
 ];
+
+export const INSTRUCTION_SET_8085: readonly InstructionMetadata[] =
+  INSTRUCTION_DEFINITIONS_8085.map((instruction) => {
+    const tStates = INSTRUCTION_T_STATES[instruction.mnemonic];
+    if (!tStates) {
+      throw new Error(`Missing T-state metadata for ${instruction.mnemonic}.`);
+    }
+    return { ...instruction, tStates };
+  });
 
 type Phase = 1 | 2;
 
@@ -758,23 +806,27 @@ const REGISTER_CODES: Readonly<Record<string, number>> = {
 
 const PAIR_CODES: Readonly<Record<string, number>> = {
   B: 0,
-  BC: 0,
   D: 1,
-  DE: 1,
   H: 2,
-  HL: 2,
   SP: 3,
 };
 
 const STACK_PAIR_CODES: Readonly<Record<string, number>> = {
   B: 0,
-  BC: 0,
   D: 1,
-  DE: 1,
   H: 2,
-  HL: 2,
   PSW: 3,
-  AF: 3,
+};
+
+const PAIR_ALIAS_REPLACEMENTS: Readonly<Record<string, string>> = {
+  BC: "B",
+  DE: "D",
+  HL: "H",
+};
+
+const STACK_PAIR_ALIAS_REPLACEMENTS: Readonly<Record<string, string>> = {
+  ...PAIR_ALIAS_REPLACEMENTS,
+  AF: "PSW",
 };
 
 function canonicalName(value: string): string {
@@ -967,16 +1019,12 @@ function splitTopLevelWhitespace(value: string): string[] {
   return parts.filter(Boolean);
 }
 
-function splitInstructionOperands(value: string, expected: number): string[] {
+function splitInstructionOperands(value: string): string[] {
   const trimmed = value.trim();
   if (!trimmed) return [];
   const commaParts = splitAtTopLevelCommas(trimmed);
   if (commaParts) return commaParts;
-  if (expected <= 1) return [trimmed];
-
-  const whitespace = splitTopLevelWhitespace(trimmed);
-  if (whitespace.length < 2) return whitespace;
-  return [whitespace[0], whitespace.slice(1).join(" ")];
+  return [trimmed];
 }
 
 function splitDataItems(value: string): string[] {
@@ -1143,12 +1191,21 @@ function tokenizeExpression(expression: string): ExpressionToken[] {
       const raw = expression.slice(index, end + 1);
       const decoded = decodeQuotedLiteral(raw);
       const characters = Array.from(decoded);
-      if (characters.length !== 1) {
+      if (characters.length < 1 || characters.length > 2) {
         throw new ExpressionSyntaxError(
-          "an expression character literal must contain exactly one character",
+          "an expression character literal must contain one or two characters",
         );
       }
-      const value = characters[0].codePointAt(0) ?? 0;
+      let value = 0;
+      for (const item of characters) {
+        const characterValue = item.codePointAt(0) ?? 0;
+        if (characterValue > 0xff) {
+          throw new ExpressionSyntaxError(
+            "an expression character literal may contain only 8-bit characters",
+          );
+        }
+        value = (value << 8) | characterValue;
+      }
       tokens.push({ kind: "number", value, text: raw });
       index = end + 1;
       continue;
@@ -1326,11 +1383,42 @@ function evaluatedOperand(
       errors,
       seenErrors,
       line,
-      `${description[0].toUpperCase()}${description.slice(1)} must be ${minimum}..${maximum} (${formatHex(minimum, minimum > 0xff ? 4 : 2)}..${formatHex(maximum, maximum > 0xff ? 4 : 2)}); got ${evaluation.value}.`,
+      minimum < 0
+        ? `${description[0].toUpperCase()}${description.slice(1)} must be ${minimum}..${maximum}; got ${evaluation.value}.`
+        : `${description[0].toUpperCase()}${description.slice(1)} must be ${minimum}..${maximum} (${formatHex(minimum, minimum > 0xff ? 4 : 2)}..${formatHex(maximum, maximum > 0xff ? 4 : 2)}); got ${evaluation.value}.`,
     );
     return 0;
   }
   return evaluation.value;
+}
+
+function evaluatedEncodedOperand(
+  expression: string,
+  currentAddress: number,
+  symbols: ReadonlyMap<string, number>,
+  phase: Phase,
+  bits: 8 | 16,
+  description: string,
+  line: number,
+  errors: AssemblyError[],
+  seenErrors: Set<string>,
+): number {
+  const modulus = bits === 8 ? 0x100 : 0x10000;
+  return (
+    evaluatedOperand(
+      expression,
+      currentAddress,
+      symbols,
+      phase,
+      -modulus,
+      modulus - 1,
+      description,
+      line,
+      errors,
+      seenErrors,
+    ) &
+    (modulus - 1)
+  );
 }
 
 function expectedOperands(
@@ -1341,13 +1429,15 @@ function expectedOperands(
   errors: AssemblyError[],
   seenErrors: Set<string>,
 ): string[] | null {
-  const operands = splitInstructionOperands(operandText, count);
+  const operands = splitInstructionOperands(operandText);
   if (operands.length !== count || operands.some((operand) => !operand.trim())) {
     addError(
       errors,
       seenErrors,
       line,
-      `${mnemonic} expects ${count === 0 ? "no operands" : `${count} operand${count === 1 ? "" : "s"}`}; got ${operands.length}.`,
+      count === 2 && operands.length === 1
+        ? `${mnemonic} requires two operands separated by a comma.`
+        : `${mnemonic} expects ${count === 0 ? "no operands" : `${count} operand${count === 1 ? "" : "s"}`}; got ${operands.length}.`,
     );
     return null;
   }
@@ -1387,13 +1477,17 @@ function pairCode(
   const table = stackPair ? STACK_PAIR_CODES : PAIR_CODES;
   const code = table[name];
   if (code === undefined) {
+    const replacements = stackPair
+      ? STACK_PAIR_ALIAS_REPLACEMENTS
+      : PAIR_ALIAS_REPLACEMENTS;
+    const replacement = replacements[name];
     addError(
       errors,
       seenErrors,
       line,
-      stackPair
-        ? `${mnemonic} requires B, D, H, or PSW (BC, DE, HL, and AF are accepted aliases); got "${operand.trim()}".`
-        : `${mnemonic} requires B, D, H, or SP (BC, DE, and HL are accepted aliases); got "${operand.trim()}".`,
+      `${stackPair
+        ? `${mnemonic} requires B, D, H, or PSW`
+        : `${mnemonic} requires B, D, H, or SP`}; got "${operand.trim()}".${replacement ? ` Use ${replacement} instead of ${name}.` : ""}`,
     );
     return 0;
   }
@@ -1468,13 +1562,12 @@ function encodeInstruction(
       errors,
       seenErrors,
     );
-    const immediate = evaluatedOperand(
+    const immediate = evaluatedEncodedOperand(
       operands[1],
       address,
       symbols,
       phase,
-      0,
-      0xff,
+      8,
       "8-bit immediate",
       line,
       errors,
@@ -1501,13 +1594,12 @@ function encodeInstruction(
       errors,
       seenErrors,
     );
-    const immediate = evaluatedOperand(
+    const immediate = evaluatedEncodedOperand(
       operands[1],
       address,
       symbols,
       phase,
-      0,
-      0xffff,
+      16,
       "16-bit immediate",
       line,
       errors,
@@ -1612,13 +1704,14 @@ function encodeInstruction(
     const base = mnemonic === "LDAX" ? 0x0a : 0x02;
     if (!operands) return [base];
     const name = canonicalName(operands[0]);
-    const pair = name === "B" || name === "BC" ? 0 : name === "D" || name === "DE" ? 1 : -1;
+    const pair = name === "B" ? 0 : name === "D" ? 1 : -1;
     if (pair < 0) {
+      const replacement = PAIR_ALIAS_REPLACEMENTS[name];
       addError(
         errors,
         seenErrors,
         line,
-        `${mnemonic} only supports B or D (BC and DE are accepted aliases); got "${operands[0].trim()}".`,
+        `${mnemonic} only supports B or D; got "${operands[0].trim()}".${replacement === "B" || replacement === "D" ? ` Use ${replacement} instead of ${name}.` : ""}`,
       );
       return [base];
     }
@@ -1640,13 +1733,12 @@ function encodeInstruction(
       mnemonic === "IN" || mnemonic === "OUT"
         ? "8-bit port number"
         : "8-bit immediate";
-    const immediate = evaluatedOperand(
+    const immediate = evaluatedEncodedOperand(
       operands[0],
       address,
       symbols,
       phase,
-      0,
-      0xff,
+      8,
       description,
       line,
       errors,
@@ -1666,13 +1758,12 @@ function encodeInstruction(
       seenErrors,
     );
     if (!operands) return [addressOpcode, 0, 0];
-    const target = evaluatedOperand(
+    const target = evaluatedEncodedOperand(
       operands[0],
       address,
       symbols,
       phase,
-      0,
-      0xffff,
+      16,
       "16-bit address",
       line,
       errors,
