@@ -59,6 +59,7 @@ yarn-error.log*
 # Temporary files
 /temp/
 /tmp/
+/temp.md
 /temp.text
 /temporary.md
 *.tmp

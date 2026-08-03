@@ -740,16 +740,10 @@ Run the built application:
 npm run start
 ```
 
-The project uses Vinext, Vite, and a Cloudflare Worker-compatible output.
-Hosting configuration is stored in:
-
-```text
-.openai/hosting.json
-```
-
-Do not create a second hosting project when an existing project ID is present.
-Deployment-specific credentials and runtime values must not be committed to the
-repository.
+The project uses Vinext, Vite, and the Cloudflare Vite plugin to produce a
+Cloudflare Worker-compatible build. Cloudflare Workers Builds deploys from the
+configured GitHub branch. Deployment-specific credentials and runtime values
+must not be committed to the repository.
 
 ## Privacy and security
 
