@@ -1,10 +1,58 @@
 [
   {
     "number": 1,
-    "aim": "Write an ALP to multiply two 8-bit data stored at different memory locations and store the 16-bit result from E001H onward."
+    "aim": "Write an Assembly Language Program (ALP) to load the accumulator with the data byte 82H and transfer the data from the accumulator to register B."
   },
   {
     "number": 2,
-    "aim": "Write an ALP to multiply a 16-bit number by an 8-bit multiplier and store the 24-bit result from D000H onward."
+    "aim": "Write an ALP to load A0H into the accumulator, decrement the accumulator by one, and store the resulting data at memory location F120H."
+  },
+  {
+    "number": 3,
+    "aim": "Write an ALP to store the contents of the accumulator at a memory location whose address is specified by a register pair."
+  },
+  {
+    "number": 4,
+    "aim": "Write an ALP to load register B with the data stored at a memory location whose address is contained in the HL register pair."
+  },
+  {
+    "number": 5,
+    "aim": "Write an ALP to find the 1's complement of an 8-bit number without using the CMA instruction."
+  },
+  {
+    "number": 6,
+    "aim": "Write an ALP to exchange the contents of two 8-bit registers without using the XCHG instruction."
+  },
+  {
+    "number": 7,
+    "aim": "Write an ALP to load 16-bit data into the HL register pair and another 16-bit data into the DE register pair. Exchange the contents of HL and DE using the XCHG instruction. Store the contents of HL starting at memory location E004H and the contents of DE starting at memory location E006H."
+  },
+  {
+    "number": 8,
+    "aim": "Write an ALP to copy the 16-bit data stored starting at memory location C250H to memory locations starting at E310H, using the HL register pair and appropriate instructions such as LHLD/LXI."
+  },
+  {
+    "number": 9,
+    "aim": "Write an ALP to load the accumulator with 9AH and rotate the accumulator left using RLC and right using RRC."
+  },
+  {
+    "number": 10,
+    "aim": "Write an ALP to set the carry flag and load the accumulator with A8H. Rotate the accumulator left through carry using RAL and right through carry using RAR."
+  },
+  {
+    "number": 11,
+    "aim": "Write an ALP to compare two 8-bit numbers X and Y. If X > Y, store 01H at memory location D000H; if X < Y, store 10H at D000H; and if X = Y, store 00H at D000H."
+  },
+  {
+    "number": 12,
+    "aim": "Write an ALP to add two 8-bit numbers stored at memory locations D101H and D102H. Store the 8-bit sum at memory location D103H and the carry, if any, at D104H."
+  },
+  {
+    "number": 13,
+    "aim": "Write an ALP to store two 16-bit numbers in memory, add the two numbers, and store the resulting 16-bit sum in specified memory locations. Store the final carry separately, if generated."
+  },
+  {
+    "number": 14,
+    "aim": "Write an ALP to subtract one 8-bit number from another. Store the two numbers in specified memory locations and store the difference in another specified memory location. Also observe the status of the carry/borrow flag."
   }
 ]
