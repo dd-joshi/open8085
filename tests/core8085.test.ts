@@ -6,6 +6,7 @@ import {
   type Assemble8085Result,
 } from "../lib/assembler8085.ts";
 import { CPU8085, type StepResult } from "../lib/cpu8085.ts";
+import { examples8085 } from "../lib/examples8085.ts";
 
 function assemblyFailure(result: Assemble8085Result): string {
   return result.errors
@@ -615,4 +616,27 @@ test("assembled DAA converts a binary sum to packed BCD and updates flags", () =
   assert.equal(cpu.flags.z, false);
   assert.equal(cpu.flags.s, false);
   assert.equal(cpu.flags.p, true);
+});
+
+test("built-in BCD counter outputs 00 through 99 and halts", () => {
+  const example = examples8085.find(
+    (candidate) => candidate.id === "bcd-led-counter",
+  );
+  assert.ok(example);
+
+  const { cpu } = loadProgram(example.source);
+  const steps = runToHalt(cpu, 260_000);
+  const outputs = steps.flatMap((step) =>
+    step.portWrites
+      .filter((write) => write.port === 0x01)
+      .map((write) => write.value),
+  );
+  const expectedOutputs = Array.from({ length: 100 }, (_, decimal) =>
+    (Math.floor(decimal / 10) << 4) | (decimal % 10),
+  );
+
+  assert.deepEqual(outputs, expectedOutputs);
+  assert.equal(cpu.ports[0x01], 0x99);
+  assert.equal(cpu.b, 0x00);
+  assert.equal(steps.length, 257_804);
 });
