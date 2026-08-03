@@ -169,8 +169,8 @@ DCR B
 JNZ COUNT
 HLT
 
-DELAY: MVI D,20H
-DLOOP1: MVI E,0FFH
+DELAY: MVI D,0AH
+DLOOP1: MVI E,7FH
 DLOOP2: DCR E
 JNZ DLOOP2
 DCR D
@@ -179,7 +179,7 @@ RET`,
     setup: {
       memory: ["No data-memory setup is required."],
       ports: [
-        "Configure port 01H as output and connect it to two hexadecimal/BCD LED digits.",
+        "No setup is required; watch port 01H on the built-in Virtual I/O board.",
       ],
     },
     expectedResult:
@@ -188,7 +188,8 @@ RET`,
       "DAA adjusts the binary addition result into valid packed BCD.",
       "64H is 100 decimal, so B limits the example to exactly one 00-to-99 cycle.",
       "CALL needs a valid stack, which is why SP is initialized before the loop.",
-      "Change the delay constants to match the simulated or physical clock speed.",
+      "At the maximum 1000 instructions per second, each value remains visible for about 2.6 seconds.",
+      "Physical hardware needs larger delay constants because its clock runs much faster than this simulator.",
     ],
   },
 ] as const satisfies readonly Example8085[];
