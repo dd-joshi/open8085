@@ -14,6 +14,7 @@ import {
   Download,
   Github,
   Hammer,
+  ListChecks,
   Pause,
   Play,
   RotateCcw,
@@ -32,6 +33,10 @@ import {
   type RegisterName,
   type StepResult,
 } from "@/lib/cpu8085";
+import {
+  SIMULATOR_RULES,
+  SIMULATOR_RULES_TITLE,
+} from "@/lib/simulatorRules";
 import {
   formatByteFields,
   parseByteInput,
@@ -229,6 +234,16 @@ export function Simulator() {
   const [storageReady, setStorageReady] = useState(false);
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [referenceQuery, setReferenceQuery] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  useEffect(() => {
+    if (!helpOpen) return;
+    const closeHelpOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setHelpOpen(false);
+    };
+    window.addEventListener("keydown", closeHelpOnEscape);
+    return () => window.removeEventListener("keydown", closeHelpOnEscape);
+  }, [helpOpen]);
 
   const selectedExample =
     activeDocument.kind === "example"
@@ -1074,6 +1089,14 @@ export function Simulator() {
           >
             <BookOpen size={14} strokeWidth={1.8} aria-hidden="true" />
             Opcodes
+          </button>
+          <button
+            className="btn btn-quiet help-button"
+            type="button"
+            onClick={() => setHelpOpen(true)}
+          >
+            <ListChecks size={14} strokeWidth={1.8} aria-hidden="true" />
+            Help
           </button>
           <span className="status-pill">
             <span className={`status-dot ${statusTone}`} aria-hidden="true" />
@@ -1986,6 +2009,60 @@ export function Simulator() {
                   No instruction matches “{referenceQuery}”.
                 </div>
               )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {helpOpen && (
+        <div
+          className="reference-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setHelpOpen(false);
+          }}
+        >
+          <aside
+            className="reference-drawer help-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-title"
+          >
+            <div className="reference-header">
+              <div>
+                <span className="field-label">Help</span>
+                <h2 id="help-title">{SIMULATOR_RULES_TITLE}</h2>
+              </div>
+              <button
+                className="btn btn-icon"
+                type="button"
+                onClick={() => setHelpOpen(false)}
+                aria-label="Close help"
+                autoFocus
+              >
+                <X size={16} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="help-body">
+              {SIMULATOR_RULES.map((section) => (
+                <section className="help-section" key={section.title}>
+                  <h3>{section.title}</h3>
+                  <ul>
+                    {section.rules.map((rule) => (
+                      <li key={rule.text}>
+                        {rule.text.split("`").map((part, index) =>
+                          index % 2 === 1 ? (
+                            <code key={index}>{part}</code>
+                          ) : (
+                            part
+                          ),
+                        )}
+                        {rule.code && <pre>{rule.code}</pre>}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
             </div>
           </aside>
         </div>
