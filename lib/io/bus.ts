@@ -137,6 +137,14 @@ export class IoBus {
     for (const device of this.devices) device.reset();
   }
 
+  /**
+   * Chips switched off: clear every chip port in cpu.ports to 00H, so no chip value is left behind
+   * and those addresses are plain ports again. Calls no chip code, so it is safe after a fault.
+   */
+  release(cpu: BusCpu): void {
+    for (const port of this.owners.keys()) cpu.setPort(port, 0);
+  }
+
   /** Before cpu.step(): load chip outputs into cpu.ports so IN reads them. */
   beforeStep(cpu: BusCpu): void {
     if (this.faultState) return;

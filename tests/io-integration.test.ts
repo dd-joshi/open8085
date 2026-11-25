@@ -86,6 +86,49 @@ HLT`;
   assert.deepEqual([...plain.ports], [...reference.ports]);
 });
 
+test("switching chips off leaves their ports as plain ports with no chip values", () => {
+  const chips = createIoChips();
+  chips.ppi.setPins("c", 0x5a);
+  chips.pio.setPins("a", 0x3c);
+  const load = (cpu: CPU8085, source: string) => {
+    const assembled = assemble8085(source, 0x2000);
+    assert.equal(assembled.success, true);
+    for (const segment of assembled.segments) cpu.load(segment.bytes, segment.origin, false);
+    cpu.setRegister("PC", assembled.entryPoint);
+    cpu.halted = false;
+  };
+  const cpu = new CPU8085();
+  cpu.reset(true, true);
+  load(cpu, `ORG 2000H
+MVI A,89H
+OUT 83H
+HLT`);
+  while (!cpu.halted) stepWithIo(cpu, chips.bus);
+  assert.equal(cpu.ports[0x83], 0xff, "with chips on, IN 83H reads the 8255 control port (FFH)");
+  assert.equal(cpu.ports[0x82], 0x5a, "with chips on, IN 82H reads the Port C switches");
+
+  chips.bus.release(cpu);
+  for (const port of [0x80, 0x81, 0x82, 0x83, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25]) {
+    assert.equal(cpu.ports[port], 0x00, `port ${port.toString(16)}H holds no chip value after Off`);
+  }
+
+  load(cpu, `ORG 2000H
+IN 83H
+MOV B,A
+IN 82H
+MOV C,A
+MVI A,55H
+OUT 80H
+IN 80H
+HLT`);
+  const before = chips.ppi.snapshot().latch.a;
+  while (!cpu.halted) stepWithIo(cpu, null);
+  assert.equal(cpu.b, 0x00, "IN 83H no longer reads the 8255");
+  assert.equal(cpu.c, 0x00, "IN 82H no longer reads the 8255 switches");
+  assert.equal(cpu.a, 0x55, "port 80H is a plain port: IN returns the last OUT");
+  assert.equal(chips.ppi.snapshot().latch.a, before, "OUT 80H with chips off does not reach the 8255");
+});
+
 test("the Virtual I/O board ports 01H/02H keep working with chips on", () => {
   const chips = createIoChips();
   const assembled = assemble8085(`ORG 2000H
