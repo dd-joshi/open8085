@@ -41,6 +41,7 @@ import {
   type ByteConverterField,
   type ByteConverterFields,
 } from "@/lib/byteConverter";
+import { moveBreakpointLines } from "@/lib/breakpointLines";
 import {
   defaultBeginnerExample,
   examples8085,
@@ -1319,7 +1320,11 @@ export function Simulator() {
               className="code-editor"
               value={code}
               onChange={(event) => {
-                setCode(event.target.value);
+                const next = event.target.value;
+                if (breakpointLines.size) {
+                  setBreakpointLines(moveBreakpointLines(code, next, breakpointLines));
+                }
+                setCode(next);
                 setDirty(true);
                 setRunning(false);
                 clearInsight();
@@ -1336,6 +1341,9 @@ export function Simulator() {
                   const start = target.selectionStart;
                   const end = target.selectionEnd;
                   const next = `${code.slice(0, start)}    ${code.slice(end)}`;
+                  if (breakpointLines.size) {
+                    setBreakpointLines(moveBreakpointLines(code, next, breakpointLines));
+                  }
                   setCode(next);
                   setDirty(true);
                   setRunning(false);
