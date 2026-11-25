@@ -19,7 +19,6 @@ a desktop simulator.
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Assembler syntax](#assembler-syntax)
 - [Solved examples](#solved-examples)
-- [Publishing weekly experiments](#publishing-weekly-experiments)
 - [Virtual I/O board](#virtual-io-board)
 - [Number converter](#number-converter)
 - [Autosave and ASM export](#autosave-and-asm-export)
@@ -47,7 +46,6 @@ It is designed for:
 - Student practice and practical examinations
 - Learning registers, flags, memory, stack, branching, and I/O
 - Testing small 8085 programs before using physical trainer hardware
-- Sharing a controlled experiment list without publishing solutions
 
 The simulator runs locally in the browser. It does not require a database,
 student account, or server-side storage.
@@ -70,7 +68,6 @@ student account, or server-side storage.
 | Trainer board | Eight output LEDs on port `01H` and eight input switches on port `02H` |
 | Converter | Editable 8-bit hexadecimal, decimal, and binary conversion |
 | Examples | Four solved programs with prepared memory or port data |
-| Experiments | Number-and-aim-only catalog, ten experiments per page |
 | Export | Download the current source as an `.asm` file |
 | Persistence | Device-local automatic source recovery |
 | Reference | Searchable instruction reference inside the simulator |
@@ -90,11 +87,8 @@ student account, or server-side storage.
 ### For instructors
 
 - Demonstrate 8085 instructions without requiring physical hardware.
-- Publish only the current week's experiment aims.
-- Keep solved examples separate from unsolved laboratory experiments.
 - Use breakpoints and traces to explain program flow.
 - Verify I/O programs through virtual LEDs and DIP switches.
-- Update the complete experiment catalog by editing one JSON file.
 
 ## Quick start
 
@@ -124,16 +118,10 @@ without restarting it.
 
 ## How to use the simulator
 
-### 1. Choose the type of program
+### 1. Choose a program
 
-Use one of the two selectors at the top:
-
-- **Examples** loads a complete solved program and its prepared test data.
-- **Experiments** loads only the selected experiment number and title as ASM
-  comments. The student must write the complete solution.
-
-The experiment arrows move through groups of ten. Changing the experiment page
-does not replace the current editor program.
+**Examples** at the top loads a complete solved program and its prepared test
+data. To write your own program, type it in the editor.
 
 ### 2. Write or edit ASM source
 
@@ -165,7 +153,7 @@ The lowest emitted address remains the assembly origin used for the memory
 image. It may differ from the execution entry when a lower-address data segment
 is declared with another `ORG`.
 
-For unsolved experiments, assembling starts with a cleared simulated machine.
+For your own programs, assembling starts with a cleared simulated machine.
 Set any required test data after assembly, or write initialization instructions
 inside the program.
 
@@ -199,16 +187,6 @@ Use the right-hand workstation:
 
 Select **Export** to download an ASM file.
 
-For experiments, the filename is generated safely from the experiment number,
-for example:
-
-```text
-EXP01.asm
-```
-
-The required experiment number and title header is restored automatically if
-it was changed or removed before export.
-
 ## Workspace reference
 
 ### Top bar
@@ -227,8 +205,6 @@ Displays:
 Contains:
 
 - Solved-example selector
-- Experiment selector
-- Previous/next experiment-page controls
 - Assemble, Run/Pause, Step, and Reset
 - Execution speeds: `1`, `10`, and `1000`
 
@@ -470,83 +446,6 @@ Each definition can include:
 - Expected result
 - Teaching tips
 
-## Publishing weekly experiments
-
-The experiment system intentionally stores **no solution code**. Each entry
-contains only:
-
-- Experiment number
-- Experiment aim/title
-
-This makes it possible to publish the current exercises without revealing a
-complete advance solution list.
-
-### File to edit
-
-```text
-lib/lab-experiments.json
-```
-
-### Required format
-
-```json
-[
-  {
-    "number": 1,
-    "aim": "Write an ALP to multiply two 8-bit data stored at different memory locations."
-  },
-  {
-    "number": 2,
-    "aim": "Write an ALP to multiply a 16-bit number by an 8-bit multiplier."
-  }
-]
-```
-
-### Publishing workflow
-
-1. Open `lib/lab-experiments.json`.
-2. Add, update, or remove experiment rows.
-3. Keep each aim on one line.
-4. Run `npm test`.
-5. Commit the JSON change.
-6. Push it to GitHub.
-7. Rebuild or redeploy the site.
-
-### Validation rules
-
-The build rejects an invalid experiment catalog. Guardrails include:
-
-- The root must be a JSON array.
-- At least one experiment is required.
-- At most 200 experiments are supported.
-- Only `number` and `aim` fields are allowed.
-- Numbers must be whole numbers from 1 to 999.
-- Experiment numbers must be unique.
-- Aims must be non-empty text.
-- Aims must be unique after case and whitespace normalization.
-- Aims must remain on one line.
-- Control characters are rejected.
-- Each aim is limited to 300 characters.
-- Entries are sorted numerically before display.
-
-Experiment numbering may contain intentional gaps. The interface displays ten
-catalog entries per page and supports partial final pages.
-
-### What students receive
-
-Selecting an experiment replaces the editor with:
-
-```asm
-; Experiment No: 01
-; Title: Write an ALP to ...
-
-```
-
-No algorithm, starter instructions, memory setup, or solved code is included.
-
-If the current editor contains unexported work, the simulator asks for
-confirmation before replacing it.
-
 ## Virtual I/O board
 
 The virtual trainer board remains visible below the Machine dock.
@@ -616,7 +515,7 @@ The current document and source are stored in browser `localStorage`.
 
 - No source is sent to a database.
 - Recovery is specific to the current browser and device.
-- Solved examples, experiments, and scratch programs are identified separately.
+- Solved examples and scratch programs are identified separately.
 - An older saved scratch program is not given solved-example memory setup.
 
 If browser policy, private mode, or storage limits block local storage, the
@@ -624,15 +523,13 @@ simulator continues to work without persistence.
 
 ### Replacement protection
 
-When changing to another example or experiment, edited source is protected by a
+When changing to another example, edited source is protected by a
 confirmation prompt. Export important work before discarding it.
 
 ### Export behavior
 
 - Solved examples use a readable example-based filename.
 - Scratch programs use `program.asm`.
-- Experiments use a number-only filename such as `EXP07.asm`.
-- Experiment metadata is normalized before download.
 - Student comments and source code are preserved.
 - Exported text uses LF line endings.
 
@@ -650,16 +547,13 @@ open8085-lab/
 │   ├── byteConverter.ts         # 8-bit HEX/DEC/BIN conversion guards
 │   ├── cpu8085.ts               # Intel 8085 execution engine
 │   ├── examples8085.ts          # Four solved examples
-│   ├── insight8085.ts           # Deterministic per-instruction explanations
-│   ├── lab-experiments.json     # Number-and-aim-only experiment catalog
-│   └── labExperiments.ts        # Catalog validation, paging, and ASM headers
+│   └── insight8085.ts           # Deterministic per-instruction explanations
 ├── public/
 │   └── og.png                   # Project/social preview image
 ├── tests/
 │   ├── byte-converter.test.ts   # Converter validation tests
 │   ├── core8085.test.ts         # Assembler and CPU integration tests
 │   ├── insight8085.test.ts       # Opcode coverage and Insight semantics
-│   ├── lab-experiments.test.ts  # Catalog and export guardrail tests
 │   └── rendered-html.test.mjs   # Server-rendered application checks
 ├── worker/
 │   └── index.ts                 # Cloudflare Worker entry
@@ -696,12 +590,10 @@ The test command performs:
 2. Assembler tests
 3. CPU execution tests
 4. Memory, stack, branch, call, return, I/O, and DAA integration tests
-5. Experiment-schema and pagination tests
-6. Safe experiment-header and filename tests
-7. Byte-converter tests
-8. Exhaustive opcode and instruction-Insight tests
-9. Full 8-bit Flag Register tests
-10. Server-rendered page regression tests
+5. Byte-converter tests
+6. Exhaustive opcode and instruction-Insight tests
+7. Full 8-bit Flag Register tests
+8. Server-rendered page regression tests
 
 Important covered cases include:
 
@@ -721,8 +613,6 @@ Important covered cases include:
 - Canonical F-register values for every functional-flag combination
 - Exact D7–D0 order, hexadecimal/binary agreement, and fixed/unused F-register
   bits
-- Invalid and malicious experiment data
-- Ten-item experiment pagination
 - Converter boundaries from 0 to 255
 - Required interface sections in rendered HTML
 
@@ -748,14 +638,10 @@ must not be committed to the repository.
 ## Privacy and security
 
 - Assembly source remains in the browser unless the user exports or submits it.
-- The experiment catalog is a static repository file.
 - The simulator does not require a student database.
 - There is no application-level student account system.
 - Browser storage is used only for local source recovery.
-- React renders experiment aims as text; HTML from the catalog is not executed.
-- Catalog validation rejects unexpected fields and unsafe control characters.
-- Download filenames are derived only from validated experiment numbers.
-- No secret keys should be added to source files or JSON experiment data.
+- No secret keys should be added to source files.
 
 Hosted access control, if enabled, is managed by the hosting platform and is
 separate from simulator program data.
@@ -767,8 +653,6 @@ separate from simulator program data.
 - The three speed settings represent instructions per second, not processor
   frequency.
 - The number converter is limited to one byte.
-- The experiment catalog is updated through Git and deployment, not a database
-  or instructor dashboard.
 - Local recovery does not synchronize between devices or browsers.
 - Clearing browser site data removes locally recovered source.
 - The virtual LEDs and switches model byte-wide ports, not electrical timing or
@@ -798,30 +682,12 @@ separate from simulator program data.
 
 ### Memory data disappears after assembly
 
-Assembly starts a fresh simulated machine. For a custom experiment:
+Assembly starts a fresh simulated machine. For your own program:
 
 - Assemble first, then enter test data in Memory; or
 - Add data initialization instructions/directives to the program.
 
 Solved examples automatically reload their prepared data.
-
-### An experiment update fails the build
-
-Check `lib/lab-experiments.json` for:
-
-- Invalid JSON commas or quotes
-- Duplicate numbers
-- Duplicate aims
-- Extra fields
-- Multiline aim text
-- Empty aims
-- Numbers outside 1–999
-
-Then run:
-
-```bash
-npm test
-```
 
 ### Saved work does not appear on another computer
 
@@ -853,7 +719,6 @@ instead of being posted in a public issue.
 - [ ] New controls have accessible labels.
 - [ ] Keyboard behavior still works.
 - [ ] Memory and I/O values remain byte/word bounded.
-- [ ] Experiment data contains no solution code.
 - [ ] No secrets or local logs are committed.
 - [ ] `npm test` passes.
 - [ ] The local page loads successfully.

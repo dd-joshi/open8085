@@ -77,34 +77,9 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.equal((textHtml.match(/Total T-states/gi) ?? []).length, 1);
   assert.match(html, /Program\.asm/);
   assert.match(html, />Examples</);
-  assert.match(html, />Experiments</);
-  // Expected experiment text comes from the data file, so editing the
-  // experiment list does not require editing this test.
-  const experiments = JSON.parse(
-    await readFile(new URL("../lib/lab-experiments.json", import.meta.url), "utf8"),
-  ).sort((left, right) => left.number - right.number);
-  const decodedText = visibleText
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">")
-    .replaceAll("&quot;", '"')
-    .replaceAll("&#x27;", "'")
-    .replaceAll("&#39;", "'")
-    .replaceAll("&amp;", "&");
-  const firstExperiment = experiments[0];
-  assert.ok(
-    decodedText.includes(
-      `${String(firstExperiment.number).padStart(2, "0")} · ${firstExperiment.aim.replace(/\s+/g, " ")}`,
-    ),
-    `The experiment list should show experiment ${firstExperiment.number}: ${firstExperiment.aim}`,
-  );
-  const rangeWidth = Math.max(2, String(experiments.length).length);
-  const pad = (value) => String(value).padStart(rangeWidth, "0");
-  assert.ok(
-    decodedText.includes(
-      `${pad(1)}–${pad(Math.min(10, experiments.length))} of ${pad(experiments.length)}`,
-    ),
-    `The experiment pager should read ${pad(1)}–${pad(Math.min(10, experiments.length))} of ${pad(experiments.length)}`,
-  );
+  // The lab experiments list was removed from the site.
+  assert.doesNotMatch(visibleText, /experiment/i);
+  assert.doesNotMatch(html, /experiment-select|experiment-nav/);
   assert.doesNotMatch(html, /Fibonacci|Find the largest/i);
   assert.match(html, /1,000 instructions per second/i);
   assert.doesNotMatch(
@@ -155,7 +130,7 @@ test("ships the real simulator core without starter preview files", async () => 
   await access(new URL("../lib/cpu8085.ts", import.meta.url));
   await access(new URL("../lib/assembler8085.ts", import.meta.url));
   await access(new URL("../lib/insight8085.ts", import.meta.url));
-  await access(new URL("../lib/lab-experiments.json", import.meta.url));
+  assert.doesNotMatch(simulator, /labExperiments|lab-experiments/);
   await access(new URL("../public/og.png", import.meta.url));
   await access(projectRoot);
 });
