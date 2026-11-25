@@ -3,7 +3,7 @@
 // Small OLED-style screen (128x64, yellow status band over a blue graph, like the common SSD1306
 // module) that draws the 8155 TIMER OUT signal over the last four timer periods.
 import type { Pio8155Snapshot } from "@/lib/io/pio8155";
-import { OLED_BOX, timerWavePoints, waveSpan } from "@/lib/io/waveform";
+import { OLED_BOX, TIMER_CLOCK_HZ, timerWavePoints, waveSpan } from "@/lib/io/waveform";
 
 const MODE_TAGS = ["1×SQR", "SQR", "1×PLS", "PLS"] as const;
 
@@ -30,7 +30,7 @@ export function TimerOled({ timer }: { readonly timer: Pio8155Snapshot["timer"] 
         <line x1={OLED_BOX.x0} y1="51.5" x2={OLED_BOX.x1} y2="51.5" className="oled-base" />
         <polyline points={points} className="oled-wave" />
         <text x="3" y="62" className="oled-foot">
-          N={count}
+          CLK {TIMER_CLOCK_HZ / 1e6}MHz
         </text>
         <text x="125" y="62" className="oled-foot" textAnchor="end">
           {state}

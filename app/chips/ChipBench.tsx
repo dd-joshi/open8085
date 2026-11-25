@@ -260,8 +260,6 @@ function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam }: Ch
             count {hex(shownCount, 4)}H = {shownCount}
             <br />
             mode {shownMode.toString(2).padStart(2, "0")}: {TIMER_MODE_NAMES[shownMode]}
-            <br />
-            clock {clockMHz} MHz (CLK OUT)
           </span>
         </div>
       </div>
