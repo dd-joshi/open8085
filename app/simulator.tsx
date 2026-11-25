@@ -1877,70 +1877,70 @@ export function Simulator() {
             )}
 
           </section>
-
-          <section className="panel trainer-panel" aria-label="Virtual I/O board">
-            <div className="panel-heading">
-              <h2 className="panel-title">
-                Virtual I/O board
-                <span className="sr-only">Virtual trainer kit</span>
-              </h2>
-              <span className="panel-note">OUT 01H · IN 02H</span>
-            </div>
-            <div className="trainer-body">
-              <div className="trainer-module">
-                <div className="module-title">
-                  <span>Output · Port 01H</span>
-                  <span className="module-port">
-                    {hex(outputPort, 2)}H
-                  </span>
-                </div>
-                <div className="led-row">
-                  {Array.from({ length: 8 }, (_, index) => {
-                    const bit = 7 - index;
-                    const active = Boolean(outputPort & (1 << bit));
-                    return (
-                      <div className="led-wrap" key={bit}>
-                        <span
-                          className={`led ${active ? "on" : ""}`}
-                          aria-label={`Output bit ${bit} ${
-                            active ? "on" : "off"
-                          }`}
-                        />
-                        <span className="bit-label">D{bit}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="trainer-module">
-                <div className="module-title">
-                  <span>Input · Port 02H</span>
-                  <span className="module-port">
-                    {hex(inputPort, 2)}H
-                  </span>
-                </div>
-                <div className="dip-row">
-                  {Array.from({ length: 8 }, (_, index) => {
-                    const bit = 7 - index;
-                    const active = Boolean(inputPort & (1 << bit));
-                    return (
-                      <button
-                        className={`dip ${active ? "on" : ""}`}
-                        type="button"
-                        key={bit}
-                        onClick={() => toggleInputBit(bit)}
-                        aria-pressed={active}
-                        aria-label={`Toggle input bit ${bit}`}
-                      >
-                        D{bit}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </section>
         </aside>
+
+        <section className="panel trainer-panel" aria-label="Virtual I/O board">
+          <div className="panel-heading">
+            <h2 className="panel-title">
+              Virtual I/O board
+              <span className="sr-only">Virtual trainer kit</span>
+            </h2>
+            <span className="panel-note">OUT 01H · IN 02H</span>
+          </div>
+          <div className="trainer-body">
+            <div className="trainer-module">
+              <div className="module-title">
+                <span>Output · Port 01H</span>
+                <span className="module-port">
+                  {hex(outputPort, 2)}H
+                </span>
+              </div>
+              <div className="led-row">
+                {Array.from({ length: 8 }, (_, index) => {
+                  const bit = 7 - index;
+                  const active = Boolean(outputPort & (1 << bit));
+                  return (
+                    <div className="led-wrap" key={bit}>
+                      <span
+                        className={`led ${active ? "on" : ""}`}
+                        aria-label={`Output bit ${bit} ${
+                          active ? "on" : "off"
+                        }`}
+                      />
+                      <span className="bit-label">D{bit}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="trainer-module">
+              <div className="module-title">
+                <span>Input · Port 02H</span>
+                <span className="module-port">
+                  {hex(inputPort, 2)}H
+                </span>
+              </div>
+              <div className="dip-row">
+                {Array.from({ length: 8 }, (_, index) => {
+                  const bit = 7 - index;
+                  const active = Boolean(inputPort & (1 << bit));
+                  return (
+                    <button
+                      className={`dip ${active ? "on" : ""}`}
+                      type="button"
+                      key={bit}
+                      onClick={() => toggleInputBit(bit)}
+                      aria-pressed={active}
+                      aria-label={`Toggle input bit ${bit}`}
+                    >
+                      D{bit}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="status-footer">
