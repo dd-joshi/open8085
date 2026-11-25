@@ -51,10 +51,18 @@ import {
   packFlagRegister,
   type InstructionInsight,
 } from "@/lib/insight8085";
-import type { IoBus } from "@/lib/io/bus";
-import { createIoChips, stepWithIo } from "@/lib/io/chips";
+import { formatTransfer, type IoBus } from "@/lib/io/bus";
+import { createIoChips, moveChip, stepWithIo } from "@/lib/io/chips";
+import {
+  ChipBench,
+  type ChipBaseTarget,
+  type ChipId,
+  type ChipPort,
+} from "./chips/ChipBench";
 
 type InspectorTab = "memory" | "trace" | "io";
+/** Virtual 8255/8155: "off" renders today's layout with no chip column. */
+type ChipMode = "off" | "virtual";
 type StatusTone = "idle" | "ready" | "running" | "halted" | "error";
 type FlagKey = keyof CPU8085Flags;
 type ActiveDocument =
@@ -67,6 +75,7 @@ const MEMORY_BYTES_PER_ROW = 8;
 const SESSION_STORAGE_KEY = "open8085-lab-session-v2";
 const LEGACY_SOURCE_STORAGE_KEY = "open8085-lab-source";
 const MAX_STORED_SOURCE_LENGTH = 500_000;
+const CHIP_STORAGE_KEY = "open8085-io-chips-v1";
 
 const hex = (value: number, digits = 2) =>
   (value >>> 0).toString(16).toUpperCase().padStart(digits, "0");
@@ -226,6 +235,7 @@ export function Simulator() {
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [referenceQuery, setReferenceQuery] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
+  const [chipMode, setChipMode] = useState<ChipMode>("off");
 
   useEffect(() => {
     if (!helpOpen) return;
@@ -698,6 +708,49 @@ export function Simulator() {
     }
   }, [activeDocument, code, savedSource, storageReady]);
 
+  // Restore the 8255/8155 switch and base addresses from the last visit.
+  useEffect(() => {
+    let stored: Record<string, unknown> | null = null;
+    try {
+      const parsed: unknown = JSON.parse(
+        window.localStorage.getItem(CHIP_STORAGE_KEY) ?? "null",
+      );
+      if (parsed && typeof parsed === "object") {
+        stored = parsed as Record<string, unknown>;
+      }
+    } catch {
+      stored = null;
+    }
+    if (!stored) return;
+    if (typeof stored.ppi === "number") moveChip(chips, "ppi", stored.ppi);
+    if (typeof stored.pio === "number") moveChip(chips, "pio", stored.pio);
+    if (typeof stored.ram === "number") chips.pio.setRamBase(stored.ram);
+    if (stored.mode !== "virtual") return;
+    ioBusRef.current = chips.bus;
+    chips.bus.beforeStep(cpu);
+    const timer = window.setTimeout(() => setChipMode("virtual"), 0);
+    return () => window.clearTimeout(timer);
+  }, [chips, cpu]);
+
+  // A chip error never stops the 8085: report it, log the last transfers, switch chips off.
+  useEffect(() => {
+    const fault = chips.bus.fault;
+    if (chipMode === "off" || !fault) return;
+    console.error(
+      `[open8085:io] ${fault.device}: ${fault.message}\n${fault.log
+        .map(formatTransfer)
+        .join("\n")}`,
+    );
+    ioBusRef.current = null;
+    const timer = window.setTimeout(() => {
+      setChipMode("off");
+      setStatusMessage(
+        `I/O chips stopped (${fault.device}: ${fault.message}). The 8085 keeps running; chips switched off.`,
+      );
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [chipMode, chips, renderTick]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey && event.key === "Enter") {
@@ -833,6 +886,100 @@ export function Simulator() {
     setStatusMessage(
       `Input port 02H is now ${hex(cpu.ports[0x02], 2)}H.`,
     );
+  };
+
+  const saveChipSettings = (mode: ChipMode) => {
+    try {
+      window.localStorage.setItem(
+        CHIP_STORAGE_KEY,
+        JSON.stringify({
+          mode,
+          ppi: chips.ppi.base,
+          pio: chips.pio.base,
+          ram: chips.pio.ramBase,
+        }),
+      );
+    } catch {
+      // Chips still work when storage is blocked; settings just are not remembered.
+    }
+  };
+
+  const changeChipMode = (mode: ChipMode) => {
+    if (mode === chipMode) return;
+    if (mode !== "off" && chips.bus.fault) chips.bus.reset();
+    ioBusRef.current = mode === "off" ? null : chips.bus;
+    ioBusRef.current?.beforeStep(cpu);
+    setChipMode(mode);
+    saveChipSettings(mode);
+    setRenderTick((current) => current + 1);
+    setStatusMessage(
+      mode === "off"
+        ? "8255/8155 switched off."
+        : `Virtual 8255 at ${hex(chips.ppi.base, 2)}H and 8155 at ${hex(
+            chips.pio.base,
+            2,
+          )}H switched on.`,
+    );
+  };
+
+  const toggleChipBit = (chip: ChipId, port: ChipPort, bit: number) => {
+    const device = chips[chip];
+    device.setPins(port, device.snapshot().pins[port] ^ (1 << bit));
+    ioBusRef.current?.beforeStep(cpu);
+    clearInsight();
+    setRenderTick((current) => current + 1);
+    setStatusMessage(
+      `${device.id} P${port.toUpperCase()} input is now ${hex(
+        device.snapshot().pins[port],
+        2,
+      )}H.`,
+    );
+  };
+
+  const changeChipBase = (target: ChipBaseTarget, text: string) => {
+    if (running) return;
+    setRenderTick((current) => current + 1);
+    if (target === "ram") {
+      const parsed = parseHex(text, 0xffff);
+      if (parsed === null || (parsed & 0xff00) === chips.pio.ramBase) return;
+      chips.pio.setRamBase(parsed);
+      saveChipSettings(chipMode);
+      setStatusMessage(
+        `8155 RAM shown at ${hex(chips.pio.ramBase, 4)}H–${hex(
+          chips.pio.ramBase + 0xff,
+          4,
+        )}H.`,
+      );
+      return;
+    }
+    const parsed = parseHex(text, 0xff);
+    const device = chips[target];
+    if (parsed === null) {
+      setStatusMessage("Enter the base port in hex, for example 80.");
+      return;
+    }
+    if ((target === "ppi" ? parsed & 0xfc : parsed & 0xf8) === device.base) return;
+    const error = moveChip(chips, target, parsed);
+    if (error) {
+      setStatusMessage(error);
+      return;
+    }
+    ioBusRef.current?.beforeStep(cpu);
+    saveChipSettings(chipMode);
+    const last = device.base + (target === "ppi" ? 3 : 5);
+    setStatusMessage(
+      `${device.id} now uses ports ${hex(device.base, 2)}H–${hex(last, 2)}H${
+        device.base !== parsed ? ` (aligned from ${hex(parsed, 2)}H)` : ""
+      }.`,
+    );
+  };
+
+  const showChipRam = () => {
+    const address = chips.pio.ramBase;
+    setMemoryBase(address);
+    setMemoryBaseText(hex(address, 4));
+    setInspectorTab("memory");
+    setStatusMessage(`Memory view moved to the 8155 RAM at ${hex(address, 4)}H.`);
   };
 
   const downloadSource = () => {
@@ -1008,6 +1155,41 @@ export function Simulator() {
               ))}
             </select>
           </div>
+          <div className="command-group chips-control">
+            <span className="field-label">8255 / 8155</span>
+            <div
+              className="speed-segments chip-segments"
+              role="group"
+              aria-label="Virtual 8255 and 8155 chips"
+            >
+              <button
+                className={`speed-segment ${chipMode === "off" ? "active" : ""}`}
+                type="button"
+                onClick={() => changeChipMode("off")}
+                aria-pressed={chipMode === "off"}
+                title="Hide the 8255/8155 column"
+              >
+                Off
+              </button>
+              <button
+                className={`speed-segment ${chipMode === "virtual" ? "active" : ""}`}
+                type="button"
+                onClick={() => changeChipMode("virtual")}
+                aria-pressed={chipMode === "virtual"}
+                title="Show virtual 8255 and 8155 chips"
+              >
+                Virtual
+              </button>
+              <button
+                className="speed-segment"
+                type="button"
+                disabled
+                title="Real 8255/8155 over USB: coming later"
+              >
+                USB
+              </button>
+            </div>
+          </div>
         </div>
         <div className="command-spacer" />
         <div className="execution-controls">
@@ -1080,7 +1262,7 @@ export function Simulator() {
         </div>
       </nav>
 
-      <main className="workspace">
+      <main className={`workspace${chipMode === "off" ? "" : " chips-on"}`}>
         <section className="panel editor-panel" aria-label="Assembly editor">
           <div className="panel-heading">
             <h1 className="panel-title">
@@ -1648,7 +1830,24 @@ export function Simulator() {
                         onFocus={(event) => event.currentTarget.select()}
                         onBlur={(event) => {
                           const parsed = parseHex(event.currentTarget.value, 0xff);
-                          if (parsed !== null) {
+                          const owner = ioBusRef.current?.owner(selectedPort);
+                          if (parsed !== null && owner) {
+                            // Chip ports: data ports take the value on their input pins;
+                            // control/timer registers are written by the program with OUT.
+                            const name = owner.portName(selectedPort);
+                            const pinPorts: Record<string, ChipPort> = { PA: "a", PB: "b", PC: "c" };
+                            const port = pinPorts[name];
+                            if (port) {
+                              chips[owner === chips.ppi ? "ppi" : "pio"].setPins(port, parsed);
+                              ioBusRef.current?.beforeStep(cpu);
+                              setRenderTick((current) => current + 1);
+                            }
+                            setStatusMessage(
+                              port
+                                ? `${owner.id} ${name} input pins set to ${hex(parsed, 2)}H.`
+                                : `Port ${hex(selectedPort, 2)}H is the ${owner.id} ${name} register; write it with OUT from your program.`,
+                            );
+                          } else if (parsed !== null) {
                             cpu.setPort(selectedPort, parsed);
                             clearInsight();
                             setRenderTick((current) => current + 1);
@@ -1741,6 +1940,16 @@ export function Simulator() {
             </div>
           </div>
         </section>
+
+        {chipMode !== "off" && (
+          <ChipBench
+            chips={chips}
+            locked={running}
+            onToggleBit={toggleChipBit}
+            onBaseChange={changeChipBase}
+            onShowRam={showChipRam}
+          />
+        )}
       </main>
 
       <footer className="status-footer">
