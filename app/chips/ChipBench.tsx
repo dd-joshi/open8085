@@ -216,7 +216,6 @@ function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam }: Ch
   const pcBadge = snap.portCMode === "ALT1" ? "IN" : snap.portCMode === "ALT2" ? "OUT" : "HS";
   const shownCount = timer.running || timer.count ? timer.count : timer.countRegister;
   const shownMode = timer.running || timer.count ? timer.mode : timer.modeRegister;
-  const timerState = timer.running ? "running" : timer.count ? "stopped" : "not started";
   return (
     <section className="chip-card" aria-label="8155 RAM, I/O and timer">
       <div className="chip-head">
@@ -241,10 +240,7 @@ function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam }: Ch
       <div className="chip-say">{snap.summary}</div>
       {snap.warning && <div className="chip-warning">{snap.warning}</div>}
       <div className="chip-last">
-        status: IN {hex(base)}H → {hex(snap.status)}H{timer.terminalCount ? " (TIMER done)" : ""}
-      </div>
-      <div className="chip-last">
-        last: <b>{transferText(chips.bus.lastFor("8155"))}</b>
+        status {hex(snap.status)}H{timer.terminalCount ? " (TC)" : ""} · last: <b>{transferText(chips.bus.lastFor("8155"))}</b>
       </div>
       <div className="chip-timer with-display">
         <TimerOled timer={timer} />
@@ -259,8 +255,6 @@ function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam }: Ch
             count {hex(shownCount, 4)}H = {shownCount}
             <br />
             mode {shownMode.toString(2).padStart(2, "0")}: {TIMER_MODE_NAMES[shownMode]}
-            <br />
-            {timerState} · TIMER OUT {timer.out ? "high" : "low"}
           </span>
         </div>
       </div>

@@ -525,3 +525,17 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
 .oled-rule { stroke: #ffd34d; stroke-width: 0.6; opacity: 0.6; }
 .oled-base { stroke: #1e5f86; stroke-width: 0.6; stroke-dasharray: 1 2; }
 .oled-wave { fill: none; stroke: #5fc8ff; stroke-width: 1.6; stroke-linejoin: miter; }
+
+/* I/O chips on narrower desktops (1101-1280px): the inspector and chip column give back width so
+   the editor stays usable; the chip cards and processor rail tighten to fit. */
+@media (min-width: 1101px) and (max-width: 1280px) {
+  .workspace.chips-on { grid-template-columns: minmax(0, 1fr) clamp(470px, 38.8vw, 530px) 300px; }
+  .chips-on .cpu-body { grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; }
+  .chips-on .flag-bit { padding: 3px 2px; }
+  .chips-on .chip-grid { grid-template-columns: 62px repeat(8, 14px) minmax(0, 1fr); }
+  .chips-on .chip-addr { min-width: 30px; }
+  .chips-on .chip-led { width: 12px; height: 12px; }
+  .chips-on .chip-switch { width: 12px; }
+  .chips-on .chip-timer.with-display { grid-template-columns: 124px minmax(0, 1fr); gap: 8px; }
+  .chips-on .chip-oled svg { width: 114px; height: 57px; }
+}
