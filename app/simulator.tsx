@@ -51,6 +51,8 @@ import {
   packFlagRegister,
   type InstructionInsight,
 } from "@/lib/insight8085";
+import type { IoBus } from "@/lib/io/bus";
+import { createIoChips, stepWithIo } from "@/lib/io/chips";
 
 type InspectorTab = "memory" | "trace" | "io";
 type StatusTone = "idle" | "ready" | "running" | "halted" | "error";
@@ -170,14 +172,16 @@ const registerDefinitions: ReadonlyArray<{
 ];
 
 export function Simulator() {
-  const [{ cpu, initialAssembly }] = useState(() => {
+  const [{ cpu, initialAssembly, chips }] = useState(() => {
     const cpu = new CPU8085();
     const assembly = assemble8085(defaultBeginnerExample.source, 0x2000);
     if (assembly.success) {
       loadAssembly(cpu, assembly, defaultBeginnerExample);
     }
-    return { cpu, initialAssembly: assembly };
+    return { cpu, initialAssembly: assembly, chips: createIoChips() };
   });
+  // Virtual 8255/8155 bus while the chips are switched on; null = OFF (plain cpu.step()).
+  const ioBusRef = useRef<IoBus | null>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
   const skipBreakpointOnceRef = useRef<number | null>(null);
@@ -277,6 +281,12 @@ export function Simulator() {
     setInsight(null);
   }, []);
 
+  // The kit's RESET line resets the 8255/8155 together with the 8085.
+  const resetChips = useCallback(() => {
+    chips.bus.reset();
+    ioBusRef.current?.beforeStep(cpu);
+  }, [chips, cpu]);
+
   const syncMachine = useCallback(
     (before?: CPU8085State) => {
       const next = cpu.getState();
@@ -299,7 +309,7 @@ export function Simulator() {
 
   const executeInstruction = useCallback(() => {
     const before = cpu.getState();
-    const result = cpu.step();
+    const result = stepWithIo(cpu, ioBusRef.current);
     const after = cpu.getState();
     const nextInsight = createInstructionInsight({
       before,
@@ -357,6 +367,7 @@ export function Simulator() {
         setDirty(false);
         cpu.reset(true, true);
         cpu.setRegister("PC", 0x2000);
+        resetChips();
         setStatusMessage(
           "Add at least one 8085 instruction before assembling or running.",
         );
@@ -366,6 +377,7 @@ export function Simulator() {
 
       setAssembly(result);
       loadAssembly(cpu, result, example);
+      resetChips();
       setDirty(false);
       setStatusMessage(
         `Assembled ${byteCount} bytes. Entry PC ${hex(result.entryPoint, 4)}H. ${
@@ -375,19 +387,20 @@ export function Simulator() {
       syncMachine();
       return result;
     },
-    [clearInsight, code, cpu, selectedExample, syncMachine],
+    [clearInsight, code, cpu, resetChips, selectedExample, syncMachine],
   );
 
   const resetMachine = useCallback(() => {
     setRunning(false);
     cpu.reset(false, false);
     cpu.setRegister("PC", assembly?.entryPoint ?? 0x2000);
+    resetChips();
     setTrace([]);
     clearInsight();
     skipBreakpointOnceRef.current = null;
     setStatusMessage("Processor reset. Program, memory, and ports are preserved.");
     syncMachine();
-  }, [assembly?.entryPoint, clearInsight, cpu, syncMachine]);
+  }, [assembly?.entryPoint, clearInsight, cpu, resetChips, syncMachine]);
 
   const stepOnce = useCallback(() => {
     if (running) return;
@@ -584,6 +597,7 @@ export function Simulator() {
       setBreakpointLines(new Set());
       cpu.reset(true, true);
       cpu.setRegister("PC", 0x2000);
+      resetChips();
       syncMachine();
       setStatusMessage(
         restoredSource === restoredSavedSource
@@ -664,7 +678,7 @@ export function Simulator() {
     }
     const readyTimer = window.setTimeout(() => setStorageReady(true), 0);
     return () => window.clearTimeout(readyTimer);
-  }, [clearInsight, cpu, syncMachine]);
+  }, [clearInsight, cpu, resetChips, syncMachine]);
 
   useEffect(() => {
     if (
