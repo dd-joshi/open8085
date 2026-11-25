@@ -78,8 +78,33 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.match(html, /Program\.asm/);
   assert.match(html, />Examples</);
   assert.match(html, />Experiments</);
-  assert.match(textHtml, /01\s*·\s*Write an ALP to multiply two 8-bit data/i);
-  assert.match(textHtml, /01–02 of 02/i);
+  // Expected experiment text comes from the data file, so editing the
+  // experiment list does not require editing this test.
+  const experiments = JSON.parse(
+    await readFile(new URL("../lib/lab-experiments.json", import.meta.url), "utf8"),
+  ).sort((left, right) => left.number - right.number);
+  const decodedText = visibleText
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#x27;", "'")
+    .replaceAll("&#39;", "'")
+    .replaceAll("&amp;", "&");
+  const firstExperiment = experiments[0];
+  assert.ok(
+    decodedText.includes(
+      `${String(firstExperiment.number).padStart(2, "0")} · ${firstExperiment.aim.replace(/\s+/g, " ")}`,
+    ),
+    `The experiment list should show experiment ${firstExperiment.number}: ${firstExperiment.aim}`,
+  );
+  const rangeWidth = Math.max(2, String(experiments.length).length);
+  const pad = (value) => String(value).padStart(rangeWidth, "0");
+  assert.ok(
+    decodedText.includes(
+      `${pad(1)}–${pad(Math.min(10, experiments.length))} of ${pad(experiments.length)}`,
+    ),
+    `The experiment pager should read ${pad(1)}–${pad(Math.min(10, experiments.length))} of ${pad(experiments.length)}`,
+  );
   assert.doesNotMatch(html, /Fibonacci|Find the largest/i);
   assert.match(html, /1,000 instructions per second/i);
   assert.doesNotMatch(
