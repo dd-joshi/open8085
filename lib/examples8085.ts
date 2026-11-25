@@ -200,27 +200,27 @@ RET`,
     difficulty: "Intermediate",
     learningGoal:
       "Program the 8255 in mode 0, drive LEDs on Port A and read switches on Port C.",
-    source: `; 8255 PPI: running light on Port A, Port C switches copied to Port B.
-; Choosing this example switches on 8255 / 8155: Virtual.
-; Different kit address? Change PPI here and the 8255 base on its card.
+    source: `; 8255: running light on Port A,
+; Port C switches copied to Port B.
+; Other kit address? Change PPI and the card.
 PPI EQU 80H       ; 8255 base port
-PORTA EQU PPI     ; Port A    80H
-PORTB EQU PPI+1   ; Port B    81H
-PORTC EQU PPI+2   ; Port C    82H
-CWR EQU PPI+3     ; control   83H
+PORTA EQU PPI     ; 80H Port A
+PORTB EQU PPI+1   ; 81H Port B
+PORTC EQU PPI+2   ; 82H Port C
+CWR EQU PPI+3     ; 83H control word
 
 ORG 2000H
 LXI SP,3FFFH
-MVI A,89H         ; control word 1000 1001: mode 0, A out, B out, C in
+MVI A,89H         ; mode 0: A out, B out, C in
 OUT CWR
 MVI B,01H         ; one lit LED
 
 LOOP: MOV A,B
-OUT PORTA         ; running light on the Port A LEDs
-IN PORTC          ; read the Port C switches
-OUT PORTB         ; copy them to the Port B LEDs
+OUT PORTA         ; running light
+IN PORTC          ; read the switches
+OUT PORTB         ; copy them to Port B
 MOV A,B
-RLC               ; move the light one place left
+RLC               ; move the light left
 MOV B,A
 CALL DELAY
 JMP LOOP
@@ -252,35 +252,35 @@ RET`,
     difficulty: "Intermediate",
     learningGoal:
       "Load the 8155 timer, start a continuous square wave and count terminal counts by polling the status register.",
-    source: `; 8155: square wave on TIMER OUT, Port A counts timer periods,
-; Port B switches are saved in the 8155 RAM.
-; Choosing this example switches on 8255 / 8155: Virtual.
-; Different kit address? Change P8155/RAM8155 here and the bases on the 8155 card.
-P8155 EQU 20H       ; 8155 base port
-CMDST EQU P8155     ; command (write) / status (read)  20H
-PA55 EQU P8155+1    ; Port A                           21H
-PB55 EQU P8155+2    ; Port B                           22H
-TLOW EQU P8155+4    ; timer count low byte             24H
-THIGH EQU P8155+5   ; timer mode + count high bits     25H
-RAM8155 EQU 2800H   ; 8155 RAM
+    source: `; 8155: square wave on TIMER OUT,
+; Port A counts timer periods,
+; Port B switches saved in 8155 RAM.
+; Other kit address? Change P8155/RAM8155.
+P8155 EQU 20H     ; 8155 base port
+CMDST EQU P8155   ; 20H command / status
+PA55 EQU P8155+1  ; 21H Port A
+PB55 EQU P8155+2  ; 22H Port B
+TLOW EQU P8155+4  ; 24H count low byte
+THIGH EQU P8155+5 ; 25H mode + count high
+RAM8155 EQU 2800H ; 8155 RAM
 
 ORG 2000H
-MVI A,0E8H        ; count low byte (count 03E8H = 1000)
+MVI A,0E8H        ; count 03E8H = 1000
 OUT TLOW
-MVI A,43H         ; 01 000011: mode 01 square wave, count high bits 03H
+MVI A,43H         ; 01 square wave, high 03H
 OUT THIGH
-MVI A,0C1H        ; command 1100 0001: start timer, A out, B in, C in
+MVI A,0C1H        ; start timer, A out, B in
 OUT CMDST
-MVI B,00H         ; timer periods seen
+MVI B,00H         ; periods seen
 
-WAIT: IN CMDST    ; read the status register
-ANI 40H           ; D6 TIMER = terminal count (reading status clears it)
+WAIT: IN CMDST    ; read the status
+ANI 40H           ; D6 TIMER: count finished?
 JZ WAIT
 INR B             ; one more period
 MOV A,B
-OUT PA55          ; show the count on the Port A LEDs
-IN PB55           ; read the Port B switches
-STA RAM8155       ; keep them in the 8155 RAM
+OUT PA55          ; count on Port A LEDs
+IN PB55           ; read Port B switches
+STA RAM8155       ; save them in 8155 RAM
 JMP WAIT`,
     setup: {
       memory: ["No data-memory setup is required."],
