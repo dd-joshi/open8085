@@ -191,7 +191,7 @@ try {
       .find((button) => button.textContent.trim() === ${JSON.stringify(label)}).click();
     return true;
   })()`);
-  await clickChipMode("Virtual");
+  await clickChipMode("On");
   await delay(200);
   assert.equal(await evaluate("Boolean(document.querySelector('.chip-bench'))"), true);
   await assemble("ORG 2000H\nMVI A,89H\nOUT 83H\nMVI A,0C1H\nOUT 80H\nHLT");

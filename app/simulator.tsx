@@ -802,7 +802,7 @@ export function Simulator() {
     if ("usesChips" in example && example.usesChips && chipMode === "off") {
       changeChipMode("virtual", false);
       setStatusMessage(
-        `Assembled “${example.title}”. 8255 / 8155 switched on for this example.`,
+        `Assembled “${example.title}”. Virtual 8255 / 8155 switched on for this example.`,
       );
     }
     setMemoryBaseText("2000");
@@ -1163,7 +1163,7 @@ export function Simulator() {
             </select>
           </div>
           <div className="command-group chips-control">
-            <span className="field-label">8255 / 8155</span>
+            <span className="field-label">Virtual 8255 / 8155</span>
             <div
               className="speed-segments chip-segments"
               role="group"
@@ -1174,7 +1174,7 @@ export function Simulator() {
                 type="button"
                 onClick={() => changeChipMode("off")}
                 aria-pressed={chipMode === "off"}
-                title="Hide the 8255/8155 column"
+                title="Hide the virtual 8255/8155 column"
               >
                 Off
               </button>
@@ -1183,17 +1183,9 @@ export function Simulator() {
                 type="button"
                 onClick={() => changeChipMode("virtual")}
                 aria-pressed={chipMode === "virtual"}
-                title="Show virtual 8255 and 8155 chips"
+                title="Show the virtual 8255 and 8155 chips"
               >
-                Virtual
-              </button>
-              <button
-                className="speed-segment"
-                type="button"
-                disabled
-                title="Real 8255/8155 over USB: coming later"
-              >
-                USB
+                On
               </button>
             </div>
           </div>

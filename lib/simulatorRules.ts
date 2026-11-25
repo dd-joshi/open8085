@@ -118,7 +118,7 @@ export const SIMULATOR_RULES: readonly SimulatorRuleSection[] = [
     title: "8255 and 8155 chips: getting started",
     rules: [
       {
-        text: "Click Virtual next to 8255 / 8155 in the bar at the top to show the I/O chips column. Click Off to hide it again. The two chip examples in the Examples list switch it on for you.",
+        text: "In the bar at the top, set Virtual 8255 / 8155 to On to show the I/O chips column. Set it to Off to hide it again. The two chip examples in the Examples list switch it on for you.",
       },
       {
         text: "Each chip has a base address (shown in its base box). Its ports follow one after another. With the starting addresses:",
