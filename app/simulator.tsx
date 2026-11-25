@@ -9,8 +9,6 @@ import {
 } from "react";
 import {
   BookOpen,
-  ChevronLeft,
-  ChevronRight,
   Download,
   Github,
   Hammer,
@@ -53,25 +51,15 @@ import {
   packFlagRegister,
   type InstructionInsight,
 } from "@/lib/insight8085";
-import {
-  createExperimentFilename,
-  createExperimentHeader,
-  ensureExperimentHeader,
-  formatExperimentNumber,
-  labExperiments,
-  paginateLabExperiments,
-} from "@/lib/labExperiments";
 
 type InspectorTab = "memory" | "trace" | "io";
 type StatusTone = "idle" | "ready" | "running" | "halted" | "error";
 type FlagKey = keyof CPU8085Flags;
 type ActiveDocument =
   | { readonly kind: "example"; readonly id: string }
-  | { readonly kind: "experiment"; readonly number: number }
   | { readonly kind: "scratch" };
 
 const SPEEDS = [1, 10, 1_000] as const;
-const EXPERIMENTS_PER_PAGE = 10;
 const MEMORY_ROWS = 4;
 const MEMORY_BYTES_PER_ROW = 8;
 const SESSION_STORAGE_KEY = "open8085-lab-session-v2";
@@ -203,7 +191,6 @@ export function Simulator() {
   const [savedSource, setSavedSource] = useState(
     defaultBeginnerExample.source,
   );
-  const [experimentPage, setExperimentPage] = useState(0);
   const [assembly, setAssembly] = useState<Assemble8085Result | null>(
     initialAssembly,
   );
@@ -249,47 +236,8 @@ export function Simulator() {
     activeDocument.kind === "example"
       ? examples8085.find((example) => example.id === activeDocument.id) ?? null
       : null;
-  const selectedExperiment =
-    activeDocument.kind === "experiment"
-      ? labExperiments.find(
-          (experiment) => experiment.number === activeDocument.number,
-        ) ?? null
-      : null;
-  const experimentPagination = paginateLabExperiments(
-    labExperiments,
-    experimentPage,
-    EXPERIMENTS_PER_PAGE,
-  );
-  const experimentPageCount = experimentPagination.pageCount;
-  const safeExperimentPage = experimentPagination.page;
-  const visibleExperiments = experimentPagination.items;
-  const selectedExperimentValue =
-    selectedExperiment &&
-    visibleExperiments.some(
-      (experiment) => experiment.number === selectedExperiment.number,
-    )
-      ? String(selectedExperiment.number)
-      : "";
-  const experimentRangeWidth = Math.max(
-    2,
-    String(labExperiments.length).length,
-  );
-  const experimentRangeLabel = `${String(
-    experimentPagination.rangeStart,
-  ).padStart(
-    experimentRangeWidth,
-    "0",
-  )}–${String(experimentPagination.rangeEnd).padStart(
-    experimentRangeWidth,
-    "0",
-  )} of ${String(labExperiments.length).padStart(
-    experimentRangeWidth,
-    "0",
-  )}`;
   const hasUserEdits = code !== savedSource;
-  const editorFilename = selectedExperiment
-    ? createExperimentFilename(selectedExperiment)
-    : "Program.asm";
+  const editorFilename = "Program.asm";
   const sourceLines = code.split(/\r?\n/);
   const displayedPC =
     snapshot.halted && trace[0] ? trace[0].pc : snapshot.pc;
@@ -421,7 +369,7 @@ export function Simulator() {
       setDirty(false);
       setStatusMessage(
         `Assembled ${byteCount} bytes. Entry PC ${hex(result.entryPoint, 4)}H. ${
-          example ? "Example data loaded." : "Machine cleared for this experiment."
+          example ? "Example data loaded." : "Machine cleared."
         }`,
       );
       syncMachine();
@@ -606,29 +554,16 @@ export function Simulator() {
         document.kind === "example"
           ? examples8085.find((candidate) => candidate.id === document.id)
           : null;
-      const experiment =
-        document.kind === "experiment"
-          ? labExperiments.find(
-              (candidate) => candidate.number === document.number,
-            )
-          : null;
       const isScratch = document.kind === "scratch";
-      if (!example && !experiment && !isScratch) return false;
+      if (!example && !isScratch) return false;
 
-      const canonicalSource =
-        example?.source ??
-        (experiment ? createExperimentHeader(experiment) : "");
-      const restoredSource = experiment
-        ? ensureExperimentHeader(experiment, source)
-        : source;
-      const persistedSavedSource =
+      const canonicalSource = example?.source ?? "";
+      const restoredSource = source;
+      const restoredSavedSource =
         typeof storedSavedSource === "string" &&
         storedSavedSource.length <= MAX_STORED_SOURCE_LENGTH
           ? storedSavedSource
           : canonicalSource;
-      const restoredSavedSource = experiment
-        ? ensureExperimentHeader(experiment, persistedSavedSource)
-        : persistedSavedSource;
       if (
         document.kind === "example" &&
         document.id === defaultBeginnerExample.id &&
@@ -647,26 +582,12 @@ export function Simulator() {
       setTrace([]);
       clearInsight();
       setBreakpointLines(new Set());
-      if (experiment) {
-        const experimentIndex = labExperiments.findIndex(
-          (candidate) => candidate.number === experiment.number,
-        );
-        setExperimentPage(
-          Math.max(0, Math.floor(experimentIndex / EXPERIMENTS_PER_PAGE)),
-        );
-      }
       cpu.reset(true, true);
       cpu.setRegister("PC", 0x2000);
       syncMachine();
       setStatusMessage(
         restoredSource === restoredSavedSource
-          ? `${
-              experiment
-                ? `Experiment ${formatExperimentNumber(experiment.number)}`
-                : example
-                  ? "Example"
-                  : "Program"
-            } restored. Assemble it before running.`
+          ? `${example ? "Example" : "Program"} restored. Assemble it before running.`
           : "Restored your unsaved work. Assemble it before running.",
       );
       return true;
@@ -711,20 +632,10 @@ export function Simulator() {
         } else if (
           parsed.version === 2 &&
           typeof parsed.code === "string" &&
-          storedDocument?.kind === "experiment" &&
-          Number.isSafeInteger(storedDocument.number)
-        ) {
-          restored = restoreDocument(
-            { kind: "experiment", number: Number(storedDocument.number) },
-            parsed.code,
-            typeof parsed.savedSource === "string"
-              ? parsed.savedSource
-              : undefined,
-          );
-        } else if (
-          parsed.version === 2 &&
-          typeof parsed.code === "string" &&
-          storedDocument?.kind === "scratch"
+          // Sessions saved while experiments existed reopen as plain programs,
+          // so a student's unsaved code is not lost.
+          (storedDocument?.kind === "scratch" ||
+            storedDocument?.kind === "experiment")
         ) {
           restored = restoreDocument(
             { kind: "scratch" },
@@ -826,55 +737,6 @@ export function Simulator() {
     window.requestAnimationFrame(() => editorRef.current?.focus());
   };
 
-  const chooseExperiment = (number: number) => {
-    const experiment = labExperiments.find(
-      (candidate) => candidate.number === number,
-    );
-    if (!experiment) {
-      setStatusMessage("That experiment is no longer published.");
-      return;
-    }
-    if (
-      activeDocument.kind === "experiment" &&
-      activeDocument.number === number
-    ) {
-      return;
-    }
-    if (
-      !confirmProgramReplacement(
-        `Experiment ${formatExperimentNumber(experiment.number)}`,
-      )
-    ) {
-      return;
-    }
-
-    const source = createExperimentHeader(experiment);
-    setRunning(false);
-    setActiveDocument({ kind: "experiment", number: experiment.number });
-    setCode(source);
-    setSavedSource(source);
-    setAssembly(null);
-    setTrace([]);
-    clearInsight();
-    setBreakpointLines(new Set());
-    setDirty(false);
-    skipBreakpointOnceRef.current = null;
-    cpu.reset(true, true);
-    cpu.setRegister("PC", 0x2000);
-    setMemoryBaseText("2000");
-    setMemoryBase(0x2000);
-    setStatusMessage(
-      `Experiment ${formatExperimentNumber(experiment.number)} opened. Write the complete program below the header.`,
-    );
-    syncMachine();
-    window.requestAnimationFrame(() => {
-      const editor = editorRef.current;
-      if (!editor) return;
-      editor.focus();
-      editor.setSelectionRange(source.length, source.length);
-    });
-  };
-
   const editRegister = (
     register: RegisterName,
     value: string,
@@ -960,21 +822,14 @@ export function Simulator() {
   };
 
   const downloadSource = () => {
-    const normalizedSource = code.replace(/\r\n?/g, "\n");
-    const exportSource = selectedExperiment
-      ? ensureExperimentHeader(selectedExperiment, normalizedSource)
-      : normalizedSource;
-    const headerWasRestored =
-      Boolean(selectedExperiment) && exportSource !== normalizedSource;
+    const exportSource = code.replace(/\r\n?/g, "\n");
     const blob = new Blob([exportSource], {
       type: "text/plain;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = selectedExperiment
-      ? createExperimentFilename(selectedExperiment)
-      : `${selectedExample?.id ?? "program"}.asm`;
+    link.download = `${selectedExample?.id ?? "program"}.asm`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -986,9 +841,7 @@ export function Simulator() {
       clearInsight();
     }
     setSavedSource(exportSource);
-    setStatusMessage(
-      `${link.download} exported${headerWasRestored ? " with the required header restored" : ""}.`,
-    );
+    setStatusMessage(`${link.download} exported.`);
   };
 
   const statusTone: StatusTone = running
@@ -1140,67 +993,6 @@ export function Simulator() {
                 </option>
               ))}
             </select>
-          </div>
-          <div className="command-group experiments">
-            <span className="field-label">Experiments</span>
-            <select
-              className={`select-control experiment-select ${
-                selectedExperiment ? "active" : ""
-              }`}
-              value={selectedExperimentValue}
-              onChange={(event) =>
-                chooseExperiment(Number(event.target.value))
-              }
-              aria-label={`Choose a lab experiment from ${experimentRangeLabel}`}
-            >
-              <option value="" disabled>
-                {selectedExperiment
-                  ? `Open ${formatExperimentNumber(selectedExperiment.number)} · ${selectedExperiment.aim}`
-                  : "Select from this group…"}
-              </option>
-              {visibleExperiments.map((experiment) => (
-                <option
-                  key={experiment.number}
-                  value={experiment.number}
-                >
-                  {formatExperimentNumber(experiment.number)} · {experiment.aim}
-                </option>
-              ))}
-            </select>
-            <button
-              className="btn btn-icon experiment-nav"
-              type="button"
-              disabled={safeExperimentPage === 0}
-              onClick={() =>
-                setExperimentPage(Math.max(0, safeExperimentPage - 1))
-              }
-              aria-label="Show the previous 10 experiments"
-              title="Previous 10 experiments"
-            >
-              <ChevronLeft size={15} strokeWidth={2} aria-hidden="true" />
-            </button>
-            <output
-              className="experiment-range"
-              aria-label={`Experiment list positions ${experimentRangeLabel}`}
-              aria-live="polite"
-              title="List positions on this page"
-            >
-              {experimentRangeLabel}
-            </output>
-            <button
-              className="btn btn-icon experiment-nav"
-              type="button"
-              disabled={safeExperimentPage >= experimentPageCount - 1}
-              onClick={() =>
-                setExperimentPage(
-                  Math.min(experimentPageCount - 1, safeExperimentPage + 1),
-                )
-              }
-              aria-label="Show the next 10 experiments"
-              title="Next 10 experiments"
-            >
-              <ChevronRight size={15} strokeWidth={2} aria-hidden="true" />
-            </button>
           </div>
         </div>
         <div className="command-spacer" />
@@ -1364,14 +1156,8 @@ export function Simulator() {
             <div className="editor-footer-row">
               {assembly === null ? (
                 <div className="build-summary">
-                  <strong>
-                    {selectedExperiment ? "Ready for code" : "Assembly required"}
-                  </strong>
-                  <span>
-                    {selectedExperiment
-                      ? "Add the complete 8085 program below the two-line header."
-                      : "Assemble the restored source before running."}
-                  </span>
+                  <strong>Assembly required</strong>
+                  <span>Assemble the restored source before running.</span>
                 </div>
               ) : assembly.success ? (
                 <div className="build-summary">

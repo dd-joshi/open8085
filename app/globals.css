@@ -92,7 +92,7 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
 .library-controls, .execution-controls { display: flex; min-width: 0; align-items: center; gap: 12px; }
 .library-controls { flex: none; }
 .execution-controls { flex: none; }
-.command-group.samples, .command-group.experiments { min-width: 0; }
+.command-group.samples { min-width: 0; }
 .field-label { color: var(--faint); font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; }
 
 .select-control, .hex-jump {
@@ -105,10 +105,6 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
 }
 .select-control { min-width: 220px; padding: 0 28px 0 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .example-select { width: 154px; min-width: 154px; }
-.experiment-select { width: clamp(190px, 17vw, 244px); min-width: 190px; }
-.experiment-select.active { box-shadow: inset 0 -2px 0 var(--signal); }
-.experiment-nav { width: 28px; min-width: 28px; flex: none; }
-.experiment-range { width: 72px; flex: none; color: var(--faint); font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.02em; text-align: center; text-transform: uppercase; white-space: nowrap; }
 .hex-jump { width: 76px; padding: 0 7px; font-family: var(--font-mono), monospace; text-transform: uppercase; }
 
 .btn {
@@ -352,7 +348,7 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
   .workspace > .inspector-column { grid-column: 2; grid-row: 1 / span 2; }
 }
 
-/* Keep the Examples dropdown from shrinking under the Experiments label. */
+/* Keep the Examples dropdown at its full width. */
 @media (min-width: 1101px) and (max-width: 1280px) {
   .command-group.samples { flex: none; }
 }
@@ -361,15 +357,14 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
   .speed-segments { grid-template-columns: repeat(3, 30px); }
 }
 
-@media (max-width: 1280px) {
+/* Two-row command bar only below 1101px; above that everything fits on one row. */
+@media (max-width: 1100px) {
   .app-shell { grid-template-rows: 48px auto minmax(0, 1fr) 26px; }
   .command-bar { flex-wrap: wrap; min-height: 88px; padding-block: 7px; }
   .command-spacer { display: none; }
   .library-controls, .execution-controls { flex: 1 1 100%; }
   .library-controls { justify-content: flex-start; }
   .execution-controls { justify-content: space-between; }
-  .command-group.experiments { flex: 1 1 auto; }
-  .experiment-select { width: auto; flex: 1 1 220px; }
 }
 
 @media (max-width: 1100px) {
@@ -393,13 +388,10 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
   .library-controls { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 8px; }
   .execution-controls { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .command-group.samples { width: 100%; }
-  .command-group.experiments { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) 28px 72px 28px; gap: 6px; }
-  .command-group.samples, .command-group.experiments, .speed-control { position: relative; }
+  .command-group.samples, .speed-control { position: relative; }
   .command-bar .field-label { position: absolute; z-index: 2; top: -5px; left: 7px; display: block; padding: 0 3px; background: #0c1013; font-size: 7px; }
   .select-control { min-width: 0; flex: 1; height: 36px; }
-  .example-select, .experiment-select { width: 100%; min-width: 0; }
-  .experiment-nav { height: 36px; }
-  .experiment-range { width: auto; }
+  .example-select { width: 100%; min-width: 0; }
   .command-group.actions { display: grid; width: 100%; grid-template-columns: repeat(4, 1fr); }
   .command-group.actions .btn { min-width: 0; height: 38px; padding: 0 5px; }
   .speed-control { width: 100%; justify-content: space-between; }

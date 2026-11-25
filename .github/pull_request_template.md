@@ -13,7 +13,6 @@ Describe the problem and the focused change that solves it.
 
 - [ ] CPU or assembler behaviour changes include tests
 - [ ] New controls have accessible labels and keyboard behaviour
-- [ ] Experiment catalog entries contain aims only, without solution code
 - [ ] No credentials, environment files, generated output, or local logs are included
 - [ ] Documentation is updated for user-visible changes
 

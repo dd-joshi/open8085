@@ -11,8 +11,6 @@ behaviour.
   changes before implementing them.
 - Keep pull requests focused on one behaviour or closely related group of
   changes.
-- Do not publish solutions in `lib/lab-experiments.json`; that catalog contains
-  experiment numbers and aims only.
 
 ## Development setup
 
