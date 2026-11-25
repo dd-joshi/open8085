@@ -81,6 +81,9 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.doesNotMatch(visibleText, /experiment/i);
   assert.doesNotMatch(html, /experiment-select|experiment-nav/);
   assert.doesNotMatch(html, /Fibonacci|Find the largest/i);
+  // 8255/8155 switch is present and OFF by default; the chip column is not rendered at all.
+  assert.match(html, /aria-label="Virtual 8255 and 8155 chips"/);
+  assert.doesNotMatch(html, /chip-bench|chips-on/);
   assert.match(html, /1,000 instructions per second/i);
   assert.doesNotMatch(
     html,
@@ -131,6 +134,8 @@ test("ships the real simulator core without starter preview files", async () => 
   await access(new URL("../lib/assembler8085.ts", import.meta.url));
   await access(new URL("../lib/insight8085.ts", import.meta.url));
   assert.doesNotMatch(simulator, /labExperiments|lab-experiments/);
+  // Chips hook around cpu.step(); the engine itself is never called with chip code inside it.
+  assert.match(simulator, /stepWithIo\(cpu, ioBusRef\.current\)/);
   await access(new URL("../public/og.png", import.meta.url));
   await access(projectRoot);
 });

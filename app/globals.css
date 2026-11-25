@@ -443,3 +443,76 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
 .help-section code { padding: 0 4px; border-radius: 2px; background: var(--well); color: var(--ink); font-family: var(--font-mono), monospace; font-size: 11px; }
 .help-section pre { margin: 6px 0 2px; padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: 2px; background: var(--well); color: var(--ink); font-family: var(--font-mono), monospace; font-size: 11px; line-height: 1.55; white-space: pre; overflow-x: auto; }
 @media (max-width: 480px) { .help-button svg { display: none; } }
+
+/* I/O chips (8255 / 8155). Everything below applies only while the chips are switched on,
+   except the command-bar switch. With the switch OFF the column is not rendered at all. */
+.chips-control { display: flex; align-items: center; gap: 6px; padding-left: 12px; border-left: 1px solid var(--line); }
+.chip-segments { grid-template-columns: repeat(3, auto); }
+.chip-segments .speed-segment { padding: 0 9px; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.chip-segments .speed-segment:disabled { color: #4d585f; cursor: not-allowed; }
+.chip-segments .speed-segment:disabled:hover { background: var(--well); color: #4d585f; }
+
+@media (min-width: 1101px) {
+  .workspace.chips-on { grid-template-columns: minmax(0, 1fr) clamp(530px, 38.8vw, 760px) clamp(336px, 24vw, 460px); }
+  .workspace.chips-on > .chip-bench { grid-column: 3; grid-row: 1 / span 2; border-left: 1px solid var(--line); }
+  /* Column 1 gives a little width back so the editor keeps its lines and the I/O board stays. */
+  .chips-on .editor-shell { grid-template-columns: 46px minmax(0, 1fr); }
+  .chips-on .line-number { padding: 0 8px 0 14px; }
+  .chips-on .code-editor { padding: 14px 8px 14px 12px; }
+  .chips-on .trainer-module { padding: 10px; }
+  .chips-on .module-title { margin-bottom: 10px; }
+  .chips-on .led-row, .chips-on .dip-row { gap: 3px; }
+  .chips-on .dip { height: 38px; }
+  .chips-on .flag-bit { padding: 3px; }
+}
+
+.chip-bench { display: grid; min-width: 0; min-height: 0; grid-template-rows: 38px minmax(0, 1fr); overflow: hidden; }
+.chip-mode { display: inline-flex; align-items: center; gap: 6px; color: var(--trace); font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.chip-mode::before { width: 6px; height: 6px; border-radius: 50%; background: var(--trace); content: ""; }
+.chip-body { display: grid; min-height: 0; align-content: start; gap: 8px; overflow: auto; padding: 8px; background: #0b0e10; }
+.chip-card { padding: 9px 10px 10px; border: 1px solid #303a40; background: #0a0d0f; box-shadow: inset 0 0 0 3px #101519; }
+.chip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.chip-name { color: var(--ink); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
+.chip-name small { margin-left: 6px; color: var(--faint); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.chip-base { display: inline-flex; align-items: center; gap: 5px; color: var(--faint); font-size: 11px; }
+.chip-base-box { display: inline-flex; align-items: center; padding: 0 5px 0 3px; border: 1px solid var(--line); border-radius: 2px; background: var(--well); color: var(--signal); font-family: var(--font-mono), monospace; font-size: 12px; font-weight: 600; }
+.chip-base-input { width: auto; min-width: 0; padding: 1px 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: right; text-transform: uppercase; outline: 0; }
+.chip-base-box:focus-within { border-color: var(--trace); }
+.chip-base-input:disabled { color: inherit; opacity: 0.75; }
+
+/* Port address tags: the address is the first, brightest thing on every port line. */
+.chip-addr { display: inline-block; min-width: 34px; padding: 1px 3px; border: 1px solid #46535b; border-radius: 2px; background: #141b1f; color: #f1f4f5; font-family: var(--font-mono), monospace; font-size: 12px; font-weight: 700; line-height: 15px; text-align: center; }
+.chip-grid { display: grid; grid-template-columns: 70px repeat(8, 16px) minmax(0, 1fr); align-items: center; gap: 5px 3px; font-family: var(--font-mono), monospace; font-size: 11px; }
+.chip-bit-head { color: #56636b; text-align: center; }
+.chip-port { display: flex; align-items: center; gap: 5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.chip-value { display: flex; align-items: center; justify-content: flex-end; gap: 5px; color: var(--signal); font-weight: 600; white-space: nowrap; }
+.chip-dir { min-width: 28px; padding: 0 3px; border: 1px solid var(--line); border-radius: 2px; color: var(--faint); font-size: 11px; font-style: normal; font-weight: 600; text-align: center; }
+.chip-dir.out { border-color: #5a4426; color: var(--signal); }
+.chip-dir.in { border-color: #2b5560; color: var(--trace); }
+.chip-dir.ctl, .chip-dir.mix, .chip-dir.hs { border-color: #46535b; color: var(--muted); }
+.chip-led { justify-self: center; width: 14px; height: 14px; border: 2px solid #384249; border-radius: 50%; background: #11171a; box-shadow: inset 0 2px 4px rgba(0,0,0,0.7); transition: background 90ms linear, border-color 90ms linear; }
+.chip-led.on { border-color: #bb8139; background: var(--signal); box-shadow: 0 0 4px rgba(255,180,84,0.48), inset 0 0 3px #fff1d3; }
+.chip-switch { position: relative; justify-self: center; width: 14px; height: 18px; padding: 0; border: 1px solid #3a454c; border-radius: 1px; background: #151b1f; cursor: pointer; }
+.chip-switch::before { position: absolute; top: 2px; right: 2px; left: 2px; height: 7px; background: #667078; content: ""; transform: translateY(7px); transition: transform 110ms ease-out, background 110ms ease-out; }
+.chip-switch:hover { border-color: #59666e; }
+.chip-switch.on { border-color: #2b6f7d; }
+.chip-switch.on::before { background: var(--trace); transform: translateY(0); }
+.chip-switch:focus-visible { outline: 1px solid var(--trace); outline-offset: 1px; }
+.chip-none { justify-self: center; color: #3a454c; }
+.chip-bit { justify-self: center; color: #8d989e; font-weight: 600; }
+.chip-bit.one { color: var(--ink); }
+.chip-say { margin-top: 6px; color: #c9d1d5; font-size: 11px; line-height: 1.5; }
+.chip-warning { margin-top: 4px; color: #ef9b96; font-size: 11px; line-height: 1.4; }
+.chip-last { color: var(--faint); font-family: var(--font-mono), monospace; font-size: 11px; line-height: 1.5; }
+.chip-last b { color: var(--trace); font-weight: 600; }
+.chip-timer { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.chip-timer.with-display { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: start; gap: 10px; }
+.chip-timer-info { display: grid; gap: 5px; color: var(--muted); font-family: var(--font-mono), monospace; font-size: 11px; }
+.chip-reg { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.chip-reg b { margin-left: auto; color: var(--signal); font-weight: 600; }
+.chip-note { color: var(--faint); line-height: 1.4; }
+.chip-ram { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line-soft); color: var(--muted); font-family: var(--font-mono), monospace; font-size: 11px; }
+.chip-ram > span { display: inline-flex; align-items: center; gap: 5px; }
+.chip-ram-range { display: inline-flex; align-items: center; gap: 5px; }
+.chip-show { height: 22px; padding: 0 8px; border: 1px solid var(--line); border-radius: 2px; background: var(--chrome); color: var(--ink); cursor: pointer; font-size: 11px; font-weight: 600; }
+.chip-show:hover { border-color: var(--trace); color: var(--trace); }

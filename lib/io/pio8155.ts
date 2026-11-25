@@ -113,6 +113,11 @@ export class Pio8155 implements IoDevice {
     return this.baseAddress;
   }
 
+  /** Where the kit maps the 8155's 256-byte RAM (display only); aligned to 256. */
+  setRamBase(address: number): void {
+    this.ramBase = address & 0xff00;
+  }
+
   /** Move the chip; the bus must call rebuildOwners() afterwards. Base is aligned to 8 ports. */
   setBase(base: number): void {
     this.baseAddress = base & 0xf8;

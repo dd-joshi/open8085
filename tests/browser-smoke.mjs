@@ -185,6 +185,34 @@ try {
   })()`);
   await delay(100);
 
+  // Virtual 8255/8155: switch on, drive the 8255 from a program, switch off again.
+  const clickChipMode = (label) => evaluate(`(() => {
+    [...document.querySelectorAll('.chips-control button')]
+      .find((button) => button.textContent.trim() === ${JSON.stringify(label)}).click();
+    return true;
+  })()`);
+  await clickChipMode("Virtual");
+  await delay(200);
+  assert.equal(await evaluate("Boolean(document.querySelector('.chip-bench'))"), true);
+  await assemble("ORG 2000H\nMVI A,89H\nOUT 83H\nMVI A,0C1H\nOUT 80H\nHLT");
+  for (let index = 0; index < 4; index += 1) {
+    await evaluate(`(() => {
+      [...document.querySelectorAll('button')]
+        .find((button) => button.textContent.trim() === 'Step').click();
+      return true;
+    })()`);
+    await delay(150);
+  }
+  const chipState = await evaluate(`(() => ({
+    summary: document.querySelector('.chip-say')?.textContent,
+    last: document.querySelector('.chip-last')?.textContent,
+  }))()`);
+  assert.equal(chipState.summary, "Mode 0 · Port A out · Port B out · Port C in");
+  assert.match(chipState.last, /OUT 80H ← C1H/);
+  await clickChipMode("Off");
+  await delay(200);
+  assert.equal(await evaluate("Boolean(document.querySelector('.chip-bench'))"), false);
+
   await evaluate(`(() => {
     [...document.querySelectorAll('button')]
       .find((button) => button.textContent.trim() === 'Opcodes').click();
