@@ -46,3 +46,46 @@ export function timerWavePoints(
   points.push(`${box.x1},${y(level)}`);
   return points.join(" ");
 }
+
+/** 8085 kits feed the 8155 TIMER IN from CLK OUT: 6.144 MHz crystal / 2 = 3.072 MHz. */
+export const TIMER_CLOCK_HZ = 3_072_000;
+
+export interface TimerTiming {
+  /** Output frequency for repeating modes (one period = N timer clocks). */
+  readonly frequencyHz: number;
+  /** Time TIMER OUT is high (ON) and low (OFF) in one period. */
+  readonly highSeconds: number;
+  readonly lowSeconds: number;
+  /** False for the single square wave / single pulse modes. */
+  readonly repeating: boolean;
+}
+
+/**
+ * Real-hardware timing of the 8155 TIMER OUT for count N and mode M.
+ * Square wave: high ceil(N/2) clocks, low floor(N/2). Pulse: high N-1 clocks, low 1 clock.
+ */
+export function timerTiming(count: number, mode: 0 | 1 | 2 | 3, clockHz = TIMER_CLOCK_HZ): TimerTiming {
+  const n = Math.max(2, count & 0x3fff);
+  const square = mode === 0 || mode === 1;
+  const high = square ? Math.ceil(n / 2) : n - 1;
+  return {
+    frequencyHz: clockHz / n,
+    highSeconds: high / clockHz,
+    lowSeconds: (n - high) / clockHz,
+    repeating: mode === 1 || mode === 3,
+  };
+}
+
+const threeDigits = (value: number) => Number(value.toPrecision(3)).toString();
+
+export function formatFrequency(hz: number): string {
+  if (hz >= 1e6) return `${threeDigits(hz / 1e6)} MHz`;
+  if (hz >= 1e3) return `${threeDigits(hz / 1e3)} kHz`;
+  return `${threeDigits(hz)} Hz`;
+}
+
+export function formatDuration(seconds: number): string {
+  if (seconds >= 1) return `${threeDigits(seconds)} s`;
+  if (seconds >= 1e-3) return `${threeDigits(seconds * 1e3)} ms`;
+  return `${threeDigits(seconds * 1e6)} µs`;
+}

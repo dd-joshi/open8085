@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import type { BusTransfer } from "@/lib/io/bus";
 import type { IoChips } from "@/lib/io/chips";
 import { TIMER_MODE_NAMES } from "@/lib/io/pio8155";
+import { formatDuration, formatFrequency, TIMER_CLOCK_HZ, timerTiming } from "@/lib/io/waveform";
 import type { PortDirection } from "@/lib/io/ppi8255";
 import { TimerOled } from "./TimerOled";
 
@@ -132,16 +133,18 @@ function BaseField({
   digits,
   locked,
   onCommit,
+  prefix = "base",
 }: {
   readonly label: string;
   readonly value: number;
   readonly digits: number;
   readonly locked: boolean;
   readonly onCommit: (text: string) => void;
+  readonly prefix?: string;
 }) {
   return (
     <label className="chip-base" title={locked ? "Pause the program to change the address" : `Change the ${label}`}>
-      base
+      {prefix}
       <span className="chip-base-box">
         <input
           key={value}
@@ -216,6 +219,8 @@ function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam }: Ch
   const pcBadge = snap.portCMode === "ALT1" ? "IN" : snap.portCMode === "ALT2" ? "OUT" : "HS";
   const shownCount = timer.running || timer.count ? timer.count : timer.countRegister;
   const shownMode = timer.running || timer.count ? timer.mode : timer.modeRegister;
+  const timing = timerTiming(shownCount, shownMode);
+  const clockMHz = TIMER_CLOCK_HZ / 1e6;
   return (
     <section className="chip-card" aria-label="8155 RAM, I/O and timer">
       <div className="chip-head">
@@ -255,18 +260,40 @@ function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam }: Ch
             count {hex(shownCount, 4)}H = {shownCount}
             <br />
             mode {shownMode.toString(2).padStart(2, "0")}: {TIMER_MODE_NAMES[shownMode]}
+            <br />
+            clock {clockMHz} MHz (CLK OUT)
           </span>
         </div>
       </div>
+      <div
+        className="chip-timing"
+        title={`Real-kit timing of TIMER OUT, assuming TIMER IN = 8085 CLK OUT = ${clockMHz} MHz. ON = output high, OFF = output low.`}
+      >
+        <span>
+          {timing.repeating ? "f" : "one shot"}
+          {timing.repeating && <b>{formatFrequency(timing.frequencyHz)}</b>}
+        </span>
+        <span>
+          ON <b>{formatDuration(timing.highSeconds)}</b>
+        </span>
+        <span>
+          OFF <b>{formatDuration(timing.lowSeconds)}</b>
+        </span>
+      </div>
       <div className="chip-ram">
         <span>
-          <BaseField label="8155 RAM start address" value={snap.ramBase} digits={4} locked={locked} onCommit={(text) => onBaseChange("ram", text)} />
+          <BaseField label="8155 RAM start address" prefix="RAM" value={snap.ramBase} digits={4} locked={locked} onCommit={(text) => onBaseChange("ram", text)} />
           <span className="chip-ram-range">
-            – <AddressTag>{hex(snap.ramBase + 0xff, 4)}H</AddressTag> RAM
+            – <AddressTag>{hex(snap.ramBase + 0xff, 4)}H</AddressTag>
           </span>
         </span>
-        <button type="button" className="chip-show" onClick={onShowRam}>
-          Show
+        <button
+          type="button"
+          className="chip-show"
+          onClick={onShowRam}
+          title={`Open ${hex(snap.ramBase, 4)}H–${hex(snap.ramBase + 0xff, 4)}H in the Memory panel`}
+        >
+          View in memory
         </button>
       </div>
     </section>
