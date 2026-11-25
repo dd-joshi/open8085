@@ -447,10 +447,8 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
 /* I/O chips (8255 / 8155). Everything below applies only while the chips are switched on,
    except the command-bar switch. With the switch OFF the column is not rendered at all. */
 .chips-control { display: flex; align-items: center; gap: 6px; padding-left: 12px; border-left: 1px solid var(--line); }
-.chip-segments { grid-template-columns: repeat(3, auto); }
+.chip-segments { grid-template-columns: repeat(2, auto); }
 .chip-segments .speed-segment { padding: 0 9px; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
-.chip-segments .speed-segment:disabled { color: #4d585f; cursor: not-allowed; }
-.chip-segments .speed-segment:disabled:hover { background: var(--well); color: #4d585f; }
 
 @media (min-width: 1101px) {
   .workspace.chips-on { grid-template-columns: minmax(0, 1fr) clamp(530px, 38.8vw, 760px) clamp(336px, 24vw, 460px); }
