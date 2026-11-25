@@ -799,6 +799,12 @@ export function Simulator() {
     setBreakpointLines(new Set());
     setDirty(true);
     assembleProgram(example.source, example);
+    if ("usesChips" in example && example.usesChips && chipMode === "off") {
+      changeChipMode("virtual", false);
+      setStatusMessage(
+        `Assembled “${example.title}”. 8255 / 8155 switched on for this example.`,
+      );
+    }
     setMemoryBaseText("2000");
     setMemoryBase(0x2000);
     window.requestAnimationFrame(() => editorRef.current?.focus());
@@ -904,7 +910,7 @@ export function Simulator() {
     }
   };
 
-  const changeChipMode = (mode: ChipMode) => {
+  const changeChipMode = (mode: ChipMode, announce = true) => {
     if (mode === chipMode) return;
     if (mode !== "off" && chips.bus.fault) chips.bus.reset();
     ioBusRef.current = mode === "off" ? null : chips.bus;
@@ -912,6 +918,7 @@ export function Simulator() {
     setChipMode(mode);
     saveChipSettings(mode);
     setRenderTick((current) => current + 1);
+    if (!announce) return;
     setStatusMessage(
       mode === "off"
         ? "8255/8155 switched off."

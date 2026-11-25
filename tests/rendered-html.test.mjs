@@ -83,6 +83,8 @@ test("server-renders the Open8085 simulator workspace", async () => {
   assert.doesNotMatch(html, /Fibonacci|Find the largest/i);
   // 8255/8155 switch is present and OFF by default; the chip column is not rendered at all.
   assert.match(html, /aria-label="Virtual 8255 and 8155 chips"/);
+  assert.match(html, /8255 PPI: running light and switches/);
+  assert.match(html, /8155 timer: square wave and period counter/);
   assert.doesNotMatch(html, /chip-bench|chips-on/);
   assert.match(html, /1,000 instructions per second/i);
   assert.doesNotMatch(
