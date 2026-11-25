@@ -742,6 +742,7 @@ export function Simulator() {
         .join("\n")}`,
     );
     ioBusRef.current = null;
+    chips.bus.release(cpu);
     const timer = window.setTimeout(() => {
       setChipMode("off");
       setStatusMessage(
@@ -749,7 +750,7 @@ export function Simulator() {
       );
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [chipMode, chips, renderTick]);
+  }, [chipMode, chips, cpu, renderTick]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -913,6 +914,7 @@ export function Simulator() {
   const changeChipMode = (mode: ChipMode, announce = true) => {
     if (mode === chipMode) return;
     if (mode !== "off" && chips.bus.fault) chips.bus.reset();
+    if (mode === "off") chips.bus.release(cpu);
     ioBusRef.current = mode === "off" ? null : chips.bus;
     ioBusRef.current?.beforeStep(cpu);
     setChipMode(mode);
@@ -921,7 +923,7 @@ export function Simulator() {
     if (!announce) return;
     setStatusMessage(
       mode === "off"
-        ? "8255/8155 switched off."
+        ? "Virtual 8255 / 8155 switched off. Their ports are plain ports again."
         : `Virtual 8255 at ${hex(chips.ppi.base, 2)}H and 8155 at ${hex(
             chips.pio.base,
             2,
