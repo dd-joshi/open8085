@@ -110,3 +110,28 @@ test("moveChip refuses clashes and keeps the old base", () => {
   assert.equal(chips.bus.owner(0x43)?.id, "8255");
   assert.equal(chips.bus.owner(0x83), undefined);
 });
+
+test("built-in chip examples drive the 8255 and the 8155 as described", async () => {
+  const { examples8085 } = await import("../lib/examples8085.ts");
+  const ppiExample = examples8085.find((example) => example.id === "ppi-8255-running-light");
+  const pioExample = examples8085.find((example) => example.id === "pio-8155-timer-counter");
+  assert.ok(ppiExample && pioExample);
+
+  const ppiChips = createIoChips();
+  ppiChips.ppi.setPins("c", 0x5a);
+  runProgram(ppiExample.source, ppiChips.bus, 5_000);
+  const ppi = ppiChips.ppi.snapshot();
+  assert.equal(ppi.summary, "Mode 0 · Port A out · Port B out · Port C in");
+  assert.equal(ppi.latch.b, 0x5a, "Port B copies the Port C switches");
+  assert.equal([1, 2, 4, 8, 16, 32, 64, 128].includes(ppi.latch.a), true, "one Port A LED lit");
+
+  const pioChips = createIoChips();
+  pioChips.pio.setPins("b", 0x3c);
+  const cpu = runProgram(pioExample.source, pioChips.bus, 20_000);
+  const pio = pioChips.pio.snapshot();
+  assert.equal(pio.timer.running, true);
+  assert.equal(pio.timer.count, 1000);
+  assert.equal(pio.timer.mode, 1);
+  assert.ok(pio.latch.a > 0, "Port A counts timer periods");
+  assert.equal(cpu.memory[0x2800], 0x3c, "Port B switches stored in 8155 RAM");
+});
