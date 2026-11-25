@@ -44,7 +44,8 @@ const chrome = spawn(
 let socket;
 try {
   let targets;
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  // Up to 30 s: Chrome can start slowly on shared CI runners.
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     try {
       targets = await (
         await fetch(`http://127.0.0.1:${debuggingPort}/json/list`)

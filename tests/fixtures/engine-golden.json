@@ -1,0 +1,203 @@
+{
+  "engine": {
+    "lib/cpu8085.ts": "ac45e50d27a9a2048fb5ccb2c2a902b567cb432ea166d6f33c54a5a786fab700",
+    "lib/assembler8085.ts": "1fa09dbb0307b3d41f9073ef6b6637078c3c80a82569e085bd4ac61e027cb555"
+  },
+  "runs": {
+    "example:add-two-8-bit": {
+      "steps": 9,
+      "halted": true,
+      "totalCycles": 79,
+      "registers": {
+        "a": 1,
+        "b": 242,
+        "c": 0,
+        "d": 0,
+        "e": 0,
+        "h": 0,
+        "l": 0,
+        "sp": 0,
+        "pc": 8211
+      },
+      "flags": {
+        "s": false,
+        "z": false,
+        "ac": false,
+        "p": false,
+        "cy": false
+      },
+      "memory": "1f237afb",
+      "ports": "e6a1d1c5",
+      "portWriteCount": 0,
+      "portWritesFirst": [],
+      "portWrites": "811c9dc5"
+    },
+    "example:sum-array-16-bit": {
+      "steps": 47,
+      "halted": true,
+      "totalCycles": 313,
+      "registers": {
+        "a": 0,
+        "b": 0,
+        "c": 0,
+        "d": 0,
+        "e": 0,
+        "h": 37,
+        "l": 6,
+        "sp": 0,
+        "pc": 8228
+      },
+      "flags": {
+        "s": false,
+        "z": true,
+        "ac": true,
+        "p": true,
+        "cy": false
+      },
+      "memory": "e745ed12",
+      "ports": "e6a1d1c5",
+      "portWriteCount": 0,
+      "portWritesFirst": [],
+      "portWrites": "811c9dc5"
+    },
+    "example:block-copy": {
+      "steps": 37,
+      "halted": true,
+      "totalCycles": 250,
+      "registers": {
+        "a": 0,
+        "b": 0,
+        "c": 0,
+        "d": 38,
+        "e": 5,
+        "h": 37,
+        "l": 6,
+        "sp": 0,
+        "pc": 8215
+      },
+      "flags": {
+        "s": false,
+        "z": true,
+        "ac": true,
+        "p": true,
+        "cy": false
+      },
+      "memory": "2ea1a9ee",
+      "ports": "e6a1d1c5",
+      "portWriteCount": 0,
+      "portWritesFirst": [],
+      "portWrites": "811c9dc5"
+    },
+    "example:bcd-led-counter": {
+      "steps": 50000,
+      "halted": false,
+      "totalCycles": 349644,
+      "registers": {
+        "a": 25,
+        "b": 81,
+        "c": 0,
+        "d": 7,
+        "e": 7,
+        "h": 0,
+        "l": 0,
+        "sp": 16381,
+        "pc": 8215
+      },
+      "flags": {
+        "s": false,
+        "z": false,
+        "ac": true,
+        "p": false,
+        "cy": false
+      },
+      "memory": "26fca10d",
+      "ports": "8d37b2a2",
+      "portWriteCount": 20,
+      "portWritesFirst": [
+        "1:0>0",
+        "1:0>1",
+        "1:1>2",
+        "1:2>3",
+        "1:3>4",
+        "1:4>5",
+        "1:5>6",
+        "1:6>7",
+        "1:7>8",
+        "1:8>9",
+        "1:9>16",
+        "1:16>17",
+        "1:17>18",
+        "1:18>19",
+        "1:19>20",
+        "1:20>21"
+      ],
+      "portWrites": "795a764a"
+    },
+    "program:port-out-sweep": {
+      "steps": 13,
+      "halted": true,
+      "totalCycles": 116,
+      "registers": {
+        "a": 85,
+        "b": 0,
+        "c": 0,
+        "d": 0,
+        "e": 0,
+        "h": 0,
+        "l": 0,
+        "sp": 0,
+        "pc": 8217
+      },
+      "flags": {
+        "s": false,
+        "z": false,
+        "ac": false,
+        "p": false,
+        "cy": false
+      },
+      "memory": "68ed0375",
+      "ports": "d73e8368",
+      "portWriteCount": 9,
+      "portWritesFirst": [
+        "131:0>137",
+        "128:0>193",
+        "129:0>193",
+        "32:0>193",
+        "33:0>85",
+        "36:0>85",
+        "37:0>85",
+        "1:0>85",
+        "255:0>85"
+      ],
+      "portWrites": "adf6d6ad"
+    },
+    "program:port-in-sweep": {
+      "steps": 10,
+      "halted": true,
+      "totalCycles": 71,
+      "registers": {
+        "a": 126,
+        "b": 165,
+        "c": 5,
+        "d": 64,
+        "e": 3,
+        "h": 0,
+        "l": 0,
+        "sp": 0,
+        "pc": 8207
+      },
+      "flags": {
+        "s": false,
+        "z": false,
+        "ac": false,
+        "p": false,
+        "cy": false
+      },
+      "memory": "3ccfa2b2",
+      "ports": "0234d6be",
+      "portWriteCount": 0,
+      "portWritesFirst": [],
+      "portWrites": "811c9dc5"
+    }
+  }
+}
