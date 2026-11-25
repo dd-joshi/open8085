@@ -7,6 +7,7 @@ import type { BusTransfer } from "@/lib/io/bus";
 import type { IoChips } from "@/lib/io/chips";
 import { TIMER_MODE_NAMES } from "@/lib/io/pio8155";
 import type { PortDirection } from "@/lib/io/ppi8255";
+import { TimerOled } from "./TimerOled";
 
 export type ChipId = "ppi" | "pio";
 export type ChipPort = "a" | "b" | "c";
@@ -19,8 +20,6 @@ export interface ChipBenchProps {
   readonly onToggleBit: (chip: ChipId, port: ChipPort, bit: number) => void;
   readonly onBaseChange: (target: ChipBaseTarget, text: string) => void;
   readonly onShowRam: () => void;
-  /** Optional timer display (the OLED), shown left of the timer registers. */
-  readonly timerDisplay?: ReactNode;
 }
 
 type Cell =
@@ -202,7 +201,7 @@ function Ppi8255Card({ chips, locked, onToggleBit, onBaseChange }: ChipBenchProp
   );
 }
 
-function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam, timerDisplay }: ChipBenchProps) {
+function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam }: ChipBenchProps) {
   const snap = chips.pio.snapshot();
   const base = snap.base;
   const timer = snap.timer;
@@ -247,8 +246,8 @@ function Pio8155Card({ chips, locked, onToggleBit, onBaseChange, onShowRam, time
       <div className="chip-last">
         last: <b>{transferText(chips.bus.lastFor("8155"))}</b>
       </div>
-      <div className={`chip-timer${timerDisplay ? " with-display" : ""}`}>
-        {timerDisplay}
+      <div className="chip-timer with-display">
+        <TimerOled timer={timer} />
         <div className="chip-timer-info">
           <span className="chip-reg">
             <AddressTag>{hex(base + 4)}H</AddressTag>TL<b>{hex(chips.pio.read(base + 4))}H</b>
