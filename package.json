@@ -24,7 +24,7 @@
     "test": "npm run build && npm run typecheck && npm run test:cpu && npm run test:isa && npm run test:io && npm run test:app && npm run test:browser:built",
     "test:cpu": "npx tsx --test tests/core8085.test.ts tests/cpu8085-conformance.test.ts tests/cpu8085-flags-conformance.test.ts tests/engine-golden.test.ts",
     "test:isa": "npx tsx --test tests/assembler8085-conformance.test.ts tests/disassembler8085-conformance.test.ts tests/assembler-disassembler-contract.test.ts tests/instruction-metadata.test.ts",
-    "test:io": "npx tsx --test tests/io-bus.test.ts tests/ppi8255.test.ts",
+    "test:io": "npx tsx --test tests/io-bus.test.ts tests/ppi8255.test.ts tests/pio8155.test.ts",
     "test:app": "npx tsx --test tests/byte-converter.test.ts tests/insight8085.test.ts && node --test tests/rendered-html.test.mjs tests/deployment-hygiene.test.mjs",
     "test:browser": "npm run build && npm run test:browser:built",
     "test:browser:built": "node tests/run-browser-smoke.mjs",
